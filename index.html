@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>bapps - App Directory</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+            padding: 1rem 0;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .search-container {
+            margin-bottom: 1.5rem;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            outline: none;
+            transition: box-shadow 0.3s ease;
+        }
+
+        #searchInput:focus {
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        #searchInput::placeholder {
+            color: #999;
+        }
+
+        .apps-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .app-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .app-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+        }
+
+        .app-card.hidden {
+            display: none;
+        }
+
+        .app-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .app-description {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: white;
+            font-size: 1.1rem;
+            display: none;
+        }
+
+        .no-results.show {
+            display: block;
+        }
+
+        .app-count {
+            text-align: center;
+            color: white;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        @media (min-width: 640px) {
+            .apps-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            h1 {
+                font-size: 3rem;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .apps-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>bapps</h1>
+            <p class="subtitle">Simple browser apps collection</p>
+        </header>
+
+        <div class="search-container">
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Search apps..."
+                autocomplete="off"
+            >
+        </div>
+
+        <div class="app-count">
+            <span id="resultCount"></span>
+        </div>
+
+        <div class="apps-grid" id="appsGrid"></div>
+
+        <div class="no-results" id="noResults">
+            No apps found matching your search
+        </div>
+    </div>
+
+    <script>
+        // App list - add new apps here
+        const apps = [
+            {
+                name: 'Stopwatch',
+                file: 'stopwatch.html',
+                description: 'A simple stopwatch timer application'
+            }
+            // Add more apps here as they are created
+        ];
+
+        // DOM elements
+        const searchInput = document.getElementById('searchInput');
+        const appsGrid = document.getElementById('appsGrid');
+        const noResults = document.getElementById('noResults');
+        const resultCount = document.getElementById('resultCount');
+
+        // Render apps
+        function renderApps(appsToRender) {
+            appsGrid.innerHTML = '';
+
+            if (appsToRender.length === 0) {
+                noResults.classList.add('show');
+                resultCount.textContent = '';
+            } else {
+                noResults.classList.remove('show');
+                resultCount.textContent = `${appsToRender.length} app${appsToRender.length !== 1 ? 's' : ''}`;
+
+                appsToRender.forEach(app => {
+                    const card = document.createElement('a');
+                    card.className = 'app-card';
+                    card.href = app.file;
+
+                    card.innerHTML = `
+                        <div class="app-name">${app.name}</div>
+                        <div class="app-description">${app.description}</div>
+                    `;
+
+                    appsGrid.appendChild(card);
+                });
+            }
+        }
+
+        // Search functionality
+        function handleSearch(query) {
+            const searchTerm = query.toLowerCase().trim();
+
+            if (searchTerm === '') {
+                renderApps(apps);
+                return;
+            }
+
+            const filtered = apps.filter(app =>
+                app.name.toLowerCase().includes(searchTerm) ||
+                app.description.toLowerCase().includes(searchTerm)
+            );
+
+            renderApps(filtered);
+        }
+
+        // Event listeners
+        searchInput.addEventListener('input', (e) => {
+            handleSearch(e.target.value);
+        });
+
+        // Initial render
+        renderApps(apps);
+    </script>
+</body>
+</html>
