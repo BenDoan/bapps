@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .container {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .display {
+            font-size: clamp(3rem, 15vw, 6rem);
+            font-weight: 300;
+            color: white;
+            margin-bottom: 2rem;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.05em;
+        }
+
+        .time-inputs {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .input-group label {
+            color: white;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.9;
+        }
+
+        .input-group input {
+            width: 80px;
+            padding: 0.75rem;
+            font-size: 1.5rem;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .input-group input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 1rem 2rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 100px;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        #startBtn {
+            background-color: #10b981;
+        }
+
+        #startBtn:hover:not(:disabled) {
+            background-color: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        #pauseBtn {
+            background-color: #f59e0b;
+        }
+
+        #pauseBtn:hover:not(:disabled) {
+            background-color: #d97706;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+
+        #resetBtn {
+            background-color: #6b7280;
+        }
+
+        #resetBtn:hover:not(:disabled) {
+            background-color: #4b5563;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        button:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .finished {
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                color: white;
+            }
+            50% {
+                color: #ef4444;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .time-inputs {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .buttons {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="display" id="display">00:00:00</div>
+
+        <div class="time-inputs">
+            <div class="input-group">
+                <label for="hoursInput">Hours</label>
+                <input type="number" id="hoursInput" min="0" max="23" value="0" placeholder="0">
+            </div>
+            <div class="input-group">
+                <label for="minutesInput">Minutes</label>
+                <input type="number" id="minutesInput" min="0" max="59" value="5" placeholder="0">
+            </div>
+            <div class="input-group">
+                <label for="secondsInput">Seconds</label>
+                <input type="number" id="secondsInput" min="0" max="59" value="0" placeholder="0">
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button id="startBtn">Start</button>
+            <button id="pauseBtn" disabled>Pause</button>
+            <button id="resetBtn">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        let totalSeconds = 0;
+        let interval = null;
+        let isRunning = false;
+
+        const display = document.getElementById('display');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const hoursInput = document.getElementById('hoursInput');
+        const minutesInput = document.getElementById('minutesInput');
+        const secondsInput = document.getElementById('secondsInput');
+
+        function formatTime(totalSeconds) {
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const secs = totalSeconds % 60;
+
+            return [hours, minutes, secs]
+                .map(val => val.toString().padStart(2, '0'))
+                .join(':');
+        }
+
+        function updateDisplay() {
+            display.textContent = formatTime(totalSeconds);
+        }
+
+        function getInputTime() {
+            const hours = parseInt(hoursInput.value) || 0;
+            const minutes = parseInt(minutesInput.value) || 0;
+            const seconds = parseInt(secondsInput.value) || 0;
+            return hours * 3600 + minutes * 60 + seconds;
+        }
+
+        function setInputsFromSeconds(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+
+            hoursInput.value = hours;
+            minutesInput.value = minutes;
+            secondsInput.value = secs;
+        }
+
+        function toggleInputs(enabled) {
+            hoursInput.disabled = !enabled;
+            minutesInput.disabled = !enabled;
+            secondsInput.disabled = !enabled;
+        }
+
+        function start() {
+            if (isRunning) return;
+
+            // Get time from inputs only if starting fresh
+            if (totalSeconds === 0) {
+                totalSeconds = getInputTime();
+                if (totalSeconds === 0) {
+                    alert('Please set a time greater than 0');
+                    return;
+                }
+            }
+
+            isRunning = true;
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            toggleInputs(false);
+            display.classList.remove('finished');
+
+            interval = setInterval(() => {
+                totalSeconds--;
+                updateDisplay();
+
+                if (totalSeconds <= 0) {
+                    finish();
+                }
+            }, 1000);
+        }
+
+        function pause() {
+            if (!isRunning) return;
+
+            isRunning = false;
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+
+            clearInterval(interval);
+        }
+
+        function reset() {
+            pause();
+            totalSeconds = getInputTime();
+            updateDisplay();
+            toggleInputs(true);
+            display.classList.remove('finished');
+
+            // If inputs are all 0, set default
+            if (totalSeconds === 0) {
+                hoursInput.value = 0;
+                minutesInput.value = 5;
+                secondsInput.value = 0;
+                totalSeconds = 300;
+                updateDisplay();
+            }
+        }
+
+        function finish() {
+            pause();
+            totalSeconds = 0;
+            updateDisplay();
+            display.classList.add('finished');
+            toggleInputs(true);
+
+            // Play notification sound (if supported)
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            } catch (e) {
+                // Silent fail if audio not supported
+            }
+
+            // Show notification
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('Timer Finished!', {
+                    body: 'Your countdown timer has reached zero.',
+                    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="75" font-size="75">⏰</text></svg>'
+                });
+            } else {
+                alert('Timer Finished!');
+            }
+        }
+
+        // Request notification permission on first interaction
+        function requestNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', () => {
+            requestNotificationPermission();
+            start();
+        });
+        pauseBtn.addEventListener('click', pause);
+        resetBtn.addEventListener('click', reset);
+
+        // Update display when inputs change
+        [hoursInput, minutesInput, secondsInput].forEach(input => {
+            input.addEventListener('input', () => {
+                if (!isRunning) {
+                    totalSeconds = getInputTime();
+                    updateDisplay();
+                }
+            });
+        });
+
+        // Initialize display
+        totalSeconds = getInputTime();
+        updateDisplay();
+    </script>
+</body>
+</html>
