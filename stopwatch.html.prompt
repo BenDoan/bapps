@@ -1,0 +1,7 @@
+> Create a simple stopwatch app
+
+* file: stopwatch.html
+* all code contained within the html file
+* displays count up in format "HH:MM:SS" and a start, stop, reset buttons
+* everything centered, vertically and horizontally
+* mobile first
