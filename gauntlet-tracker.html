@@ -77,6 +77,17 @@
             box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
         }
 
+        .btn-demo {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-demo:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
         #fileInput {
             display: none;
         }
@@ -181,6 +192,7 @@
         <div class="header-actions">
             <input type="file" id="fileInput" accept=".json" multiple>
             <button class="btn btn-upload" id="uploadBtn">Upload Files</button>
+            <button class="btn btn-demo" id="demoBtn">Demo</button>
             <button class="btn btn-reset" id="resetBtn">Reset</button>
         </div>
     </header>
@@ -241,6 +253,7 @@
         // DOM elements
         const fileInput = document.getElementById('fileInput');
         const uploadBtn = document.getElementById('uploadBtn');
+        const demoBtn = document.getElementById('demoBtn');
         const resetBtn = document.getElementById('resetBtn');
         const emptyState = document.getElementById('emptyState');
         const chartsContainer = document.getElementById('chartsContainer');
@@ -498,6 +511,57 @@
             updateUI();
         }
 
+        // Load demo data
+        function loadDemoData() {
+            // Generate 12 sessions showing improvement over time
+            const baseDate = new Date(2026, 0, 1, 10, 0);
+            const demoSessions = [];
+
+            for (let i = 0; i < 12; i++) {
+                const sessionDate = new Date(baseDate);
+                sessionDate.setDate(baseDate.getDate() + i * 2);
+                sessionDate.setHours(10 + Math.floor(Math.random() * 8));
+                sessionDate.setMinutes(Math.floor(Math.random() * 60));
+
+                // Simulate improvement over time with some variance
+                const progress = i / 11; // 0 to 1
+                const variance = () => (Math.random() - 0.5) * 0.3;
+
+                const data = {
+                    totalTicks: Math.round(450 - progress * 80 + variance() * 30),
+                    lostTicks: Math.round(60 - progress * 35 + variance() * 15),
+                    usedTicks: (82 + progress * 12 + variance() * 5).toFixed(2) + '%',
+                    playerAttacks: Math.round(70 + progress * 15 + variance() * 10),
+                    wrongOffensivePrayer: Math.max(0, Math.round(8 - progress * 6 + variance() * 3)),
+                    wrongAttackStyle: Math.max(0, Math.round(4 - progress * 3 + variance() * 2)),
+                    hunllefAttacks: Math.round(80 - progress * 15 + variance() * 10),
+                    wrongDefensivePrayer: Math.max(0, Math.round(6 - progress * 5 + variance() * 2)),
+                    hunleffStomps: Math.max(0, Math.round(3 - progress * 3 + variance() * 1)),
+                    tornadoHits: Math.max(0, Math.round(4 - progress * 3 + variance() * 2)),
+                    floorTileHits: Math.max(0, Math.round(10 - progress * 8 + variance() * 3)),
+                    damageTaken: Math.round(400 - progress * 150 + variance() * 50),
+                    dpsTaken: parseFloat((1.8 - progress * 0.7 + variance() * 0.3).toFixed(4)),
+                    dpsGiven: parseFloat((3.5 + progress * 1.2 + variance() * 0.4).toFixed(4))
+                };
+
+                const year = sessionDate.getFullYear();
+                const month = String(sessionDate.getMonth() + 1).padStart(2, '0');
+                const day = String(sessionDate.getDate()).padStart(2, '0');
+                const hour = String(sessionDate.getHours()).padStart(2, '0');
+                const minute = String(sessionDate.getMinutes()).padStart(2, '0');
+
+                demoSessions.push({
+                    username: 'demouser',
+                    date: sessionDate,
+                    dateStr: `${year}-${month}-${day} ${hour}:${minute}`,
+                    data
+                });
+            }
+
+            sessions = demoSessions;
+            updateUI();
+        }
+
         // Event listeners
         uploadBtn.addEventListener('click', () => {
             fileInput.click();
@@ -511,6 +575,8 @@
         });
 
         resetBtn.addEventListener('click', reset);
+
+        demoBtn.addEventListener('click', loadDemoData);
 
         // Handle window resize
         let resizeTimeout;
