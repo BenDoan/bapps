@@ -379,8 +379,9 @@
             return typeof value === 'number' ? value : parseFloat(value) || 0;
         }
 
-        // Load files
+        // Load files (replaces existing data)
         async function loadFiles(files) {
+            sessions = [];
             for (const file of files) {
                 try {
                     const text = await file.text();
