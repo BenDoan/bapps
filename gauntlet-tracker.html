@@ -67,6 +67,10 @@
             background-clip: text;
         }
 
+        #chartedText {
+            -webkit-text-fill-color: currentColor;
+        }
+
         .header-actions {
             display: flex;
             gap: 0.75rem;
@@ -223,7 +227,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
             </a>
-            <h1>Gauntlet Performance Tracker Charted</h1>
+            <h1>Gauntlet Performance Tracker <span id="chartedText">Charted</span></h1>
         </div>
         <div class="header-actions">
             <input type="file" id="fileInput" accept=".json" multiple>
@@ -247,6 +251,16 @@
     </div>
 
     <script>
+        // Randomize "Charted" color on page load
+        const chartedColors = [
+            '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16',
+            '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9',
+            '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
+            '#ec4899', '#f43f5e'
+        ];
+        const randomColor = chartedColors[Math.floor(Math.random() * chartedColors.length)];
+        document.getElementById('chartedText').style.color = randomColor;
+
         // State
         let sessions = [];
 
