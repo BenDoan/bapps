@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gauntlet Performance Tracker Charted</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-upload {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-upload:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-reset {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background: #4b5563;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .container {
+            padding: 1.5rem;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+            max-width: 400px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chart-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            text-transform: capitalize;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 200px;
+        }
+
+        .chart-container canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .file-count {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 640px) {
+            header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Gauntlet Performance Tracker Charted</h1>
+        <div class="header-actions">
+            <input type="file" id="fileInput" accept=".json" multiple>
+            <button class="btn btn-upload" id="uploadBtn">Upload Files</button>
+            <button class="btn btn-reset" id="resetBtn">Reset</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="empty-state" id="emptyState">
+            <div class="empty-state-icon">📊</div>
+            <h2>No Data Loaded</h2>
+            <p>Upload your Gauntlet Tracker JSON files to visualize your performance over time.</p>
+        </div>
+
+        <div id="chartsContainer" style="display: none;">
+            <div class="file-count" id="fileCount"></div>
+            <div class="charts-grid" id="chartsGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let sessions = [];
+
+        // Chart colors for each metric
+        const chartColors = {
+            totalTicks: '#667eea',
+            lostTicks: '#ef4444',
+            usedTicks: '#10b981',
+            playerAttacks: '#f59e0b',
+            wrongOffensivePrayer: '#ec4899',
+            wrongAttackStyle: '#8b5cf6',
+            hunllefAttacks: '#06b6d4',
+            wrongDefensivePrayer: '#f97316',
+            hunleffStomps: '#84cc16',
+            tornadoHits: '#e11d48',
+            floorTileHits: '#0ea5e9',
+            damageTaken: '#dc2626',
+            dpsTaken: '#a855f7',
+            dpsGiven: '#22c55e'
+        };
+
+        // Friendly names for metrics
+        const metricNames = {
+            totalTicks: 'Total Ticks',
+            lostTicks: 'Lost Ticks',
+            usedTicks: 'Ticks Used %',
+            playerAttacks: 'Player Attacks',
+            wrongOffensivePrayer: 'Wrong Offensive Prayer',
+            wrongAttackStyle: 'Wrong Attack Style',
+            hunllefAttacks: 'Hunllef Attacks',
+            wrongDefensivePrayer: 'Wrong Defensive Prayer',
+            hunleffStomps: 'Hunllef Stomps',
+            tornadoHits: 'Tornado Hits',
+            floorTileHits: 'Floor Tile Hits',
+            damageTaken: 'Damage Taken',
+            dpsTaken: 'DPS Taken',
+            dpsGiven: 'DPS Given'
+        };
+
+        // DOM elements
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const emptyState = document.getElementById('emptyState');
+        const chartsContainer = document.getElementById('chartsContainer');
+        const chartsGrid = document.getElementById('chartsGrid');
+        const fileCount = document.getElementById('fileCount');
+
+        // Parse filename to extract date
+        function parseFilename(filename) {
+            // Format: gauntletTracker-username-YYYY-MM-DD-HH-MM.json
+            const match = filename.match(/gauntletTracker-(.+?)-(\d{4})-(\d{2})-(\d{2})-(\d{2})-(\d{2})\.json/);
+            if (match) {
+                const [, username, year, month, day, hour, minute] = match;
+                return {
+                    username,
+                    date: new Date(year, month - 1, day, hour, minute),
+                    dateStr: `${year}-${month}-${day} ${hour}:${minute}`
+                };
+            }
+            return null;
+        }
+
+        // Parse value (handle percentage strings)
+        function parseValue(value) {
+            if (typeof value === 'string' && value.endsWith('%')) {
+                return parseFloat(value.replace('%', ''));
+            }
+            return typeof value === 'number' ? value : parseFloat(value) || 0;
+        }
+
+        // Load files
+        async function loadFiles(files) {
+            for (const file of files) {
+                try {
+                    const text = await file.text();
+                    const data = JSON.parse(text);
+                    const fileInfo = parseFilename(file.name);
+
+                    if (fileInfo) {
+                        // Check if this session already exists
+                        const exists = sessions.some(s =>
+                            s.dateStr === fileInfo.dateStr && s.username === fileInfo.username
+                        );
+
+                        if (!exists) {
+                            sessions.push({
+                                ...fileInfo,
+                                data
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.error(`Error loading ${file.name}:`, e);
+                }
+            }
+
+            // Sort sessions by date
+            sessions.sort((a, b) => a.date - b.date);
+
+            updateUI();
+        }
+
+        // Draw a line chart on canvas
+        function drawChart(canvas, values, color, labels) {
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+
+            // Set canvas size with device pixel ratio for sharpness
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+
+            const width = rect.width;
+            const height = rect.height;
+            const padding = { top: 20, right: 20, bottom: 30, left: 50 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+
+            if (values.length === 0) return;
+
+            // Calculate min/max
+            const minVal = Math.min(...values);
+            const maxVal = Math.max(...values);
+            const range = maxVal - minVal || 1;
+            const padding10 = range * 0.1;
+            const yMin = Math.max(0, minVal - padding10);
+            const yMax = maxVal + padding10;
+            const yRange = yMax - yMin || 1;
+
+            // Draw grid lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            const gridLines = 5;
+            for (let i = 0; i <= gridLines; i++) {
+                const y = padding.top + (chartHeight * i / gridLines);
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+            }
+
+            // Draw Y-axis labels
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let i = 0; i <= gridLines; i++) {
+                const y = padding.top + (chartHeight * i / gridLines);
+                const value = yMax - (yRange * i / gridLines);
+                ctx.fillText(value.toFixed(1), padding.left - 5, y);
+            }
+
+            // Calculate points
+            const points = values.map((val, idx) => ({
+                x: padding.left + (values.length === 1 ? chartWidth / 2 : (idx / (values.length - 1)) * chartWidth),
+                y: padding.top + chartHeight - ((val - yMin) / yRange) * chartHeight
+            }));
+
+            // Draw line
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            points.forEach((point, idx) => {
+                if (idx === 0) {
+                    ctx.moveTo(point.x, point.y);
+                } else {
+                    ctx.lineTo(point.x, point.y);
+                }
+            });
+            ctx.stroke();
+
+            // Draw area fill
+            ctx.fillStyle = color.replace(')', ', 0.1)').replace('rgb', 'rgba');
+            ctx.beginPath();
+            ctx.moveTo(padding.left, padding.top + chartHeight);
+            points.forEach((point, idx) => {
+                if (idx === 0) {
+                    ctx.lineTo(point.x, point.y);
+                } else {
+                    ctx.lineTo(point.x, point.y);
+                }
+            });
+            ctx.lineTo(points[points.length - 1].x, padding.top + chartHeight);
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw points
+            points.forEach((point, idx) => {
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#1a1a2e';
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw X-axis labels (show a few dates)
+            if (labels && labels.length > 0) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.font = '9px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+
+                const labelCount = Math.min(5, labels.length);
+                const step = labels.length <= labelCount ? 1 : Math.floor(labels.length / (labelCount - 1));
+
+                for (let i = 0; i < labels.length; i += step) {
+                    if (i >= labels.length) break;
+                    const x = padding.left + (labels.length === 1 ? chartWidth / 2 : (i / (labels.length - 1)) * chartWidth);
+                    const label = labels[i].split(' ')[0]; // Just show date part
+                    ctx.fillText(label, x, height - padding.bottom + 5);
+                }
+
+                // Always show last label
+                if (labels.length > 1 && (labels.length - 1) % step !== 0) {
+                    const x = padding.left + chartWidth;
+                    const label = labels[labels.length - 1].split(' ')[0];
+                    ctx.fillText(label, x, height - padding.bottom + 5);
+                }
+            }
+        }
+
+        // Update UI
+        function updateUI() {
+            if (sessions.length === 0) {
+                emptyState.style.display = 'flex';
+                chartsContainer.style.display = 'none';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            chartsContainer.style.display = 'block';
+            fileCount.textContent = `${sessions.length} session${sessions.length !== 1 ? 's' : ''} loaded`;
+
+            // Get all metrics from first session
+            const metrics = Object.keys(sessions[0].data);
+
+            // Clear and rebuild charts
+            chartsGrid.innerHTML = '';
+
+            metrics.forEach(metric => {
+                const values = sessions.map(s => parseValue(s.data[metric]));
+                const labels = sessions.map(s => s.dateStr);
+                const color = chartColors[metric] || '#667eea';
+                const name = metricNames[metric] || metric;
+
+                const card = document.createElement('div');
+                card.className = 'chart-card';
+
+                const title = document.createElement('div');
+                title.className = 'chart-title';
+                title.style.color = color;
+                title.textContent = name;
+
+                const container = document.createElement('div');
+                container.className = 'chart-container';
+
+                const canvas = document.createElement('canvas');
+                container.appendChild(canvas);
+
+                const stats = document.createElement('div');
+                stats.className = 'stats-row';
+                const min = Math.min(...values);
+                const max = Math.max(...values);
+                const avg = values.reduce((a, b) => a + b, 0) / values.length;
+                stats.innerHTML = `
+                    <span>Min: ${min.toFixed(2)}</span>
+                    <span>Avg: ${avg.toFixed(2)}</span>
+                    <span>Max: ${max.toFixed(2)}</span>
+                `;
+
+                card.appendChild(title);
+                card.appendChild(container);
+                card.appendChild(stats);
+                chartsGrid.appendChild(card);
+
+                // Draw chart after DOM is updated
+                requestAnimationFrame(() => {
+                    drawChart(canvas, values, color, labels);
+                });
+            });
+        }
+
+        // Reset
+        function reset() {
+            sessions = [];
+            updateUI();
+        }
+
+        // Event listeners
+        uploadBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                loadFiles(Array.from(e.target.files));
+                fileInput.value = ''; // Reset so same files can be selected again
+            }
+        });
+
+        resetBtn.addEventListener('click', reset);
+
+        // Handle window resize
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(updateUI, 100);
+        });
+
+        // Initial UI
+        updateUI();
+    </script>
+</body>
+</html>
