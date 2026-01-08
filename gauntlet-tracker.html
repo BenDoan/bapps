@@ -505,6 +505,12 @@
                     const fileInfo = parseFilename(file.name);
 
                     if (fileInfo) {
+                        // Filter out sessions with player attacks less than 30
+                        const playerAttacks = parseValue(data.playerAttacks);
+                        if (playerAttacks < 30) {
+                            continue;
+                        }
+
                         // Check if this session already exists
                         const exists = sessions.some(s =>
                             s.dateStr === fileInfo.dateStr && s.username === fileInfo.username
