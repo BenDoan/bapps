@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- T made of ruler (horizontal) and hand saw (vertical) -->
+
+  <!-- Ruler (crossbar) -->
+  <rect x="4" y="6" width="56" height="12" rx="1" fill="#FCD34D" stroke="#B45309" stroke-width="1.5"/>
+  <!-- Ruler markings -->
+  <line x1="12" y1="6" x2="12" y2="10" stroke="#92400E" stroke-width="1"/>
+  <line x1="20" y1="6" x2="20" y2="12" stroke="#92400E" stroke-width="1.5"/>
+  <line x1="28" y1="6" x2="28" y2="10" stroke="#92400E" stroke-width="1"/>
+  <line x1="36" y1="6" x2="36" y2="12" stroke="#92400E" stroke-width="1.5"/>
+  <line x1="44" y1="6" x2="44" y2="10" stroke="#92400E" stroke-width="1"/>
+  <line x1="52" y1="6" x2="52" y2="12" stroke="#92400E" stroke-width="1.5"/>
+
+  <!-- Hand saw (stem) -->
+  <!-- Saw handle -->
+  <path d="M22 20 Q20 22 20 26 L20 32 Q20 36 24 36 L28 36 L28 20 Z" fill="#8B4513" stroke="#5D3A1A" stroke-width="1.5"/>
+  <circle cx="24" cy="28" r="2" fill="#5D3A1A"/>
+  <!-- Saw blade -->
+  <rect x="28" y="18" width="16" height="4" fill="#9CA3AF" stroke="#6B7280" stroke-width="1"/>
+  <rect x="28" y="22" width="4" height="38" fill="#D1D5DB" stroke="#6B7280" stroke-width="1"/>
+  <!-- Saw teeth -->
+  <path d="M32 24 L34 26 L32 28 L34 30 L32 32 L34 34 L32 36 L34 38 L32 40 L34 42 L32 44 L34 46 L32 48 L34 50 L32 52 L34 54 L32 56 L34 58 L32 60" fill="none" stroke="#6B7280" stroke-width="1"/>
+</svg>

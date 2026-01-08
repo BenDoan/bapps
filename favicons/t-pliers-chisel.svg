@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- T made of pliers (horizontal) and chisel (vertical) -->
+
+  <!-- Pliers (crossbar) - viewed from above -->
+  <!-- Left handle -->
+  <rect x="2" y="10" width="20" height="6" rx="2" fill="#EF4444" stroke="#B91C1C" stroke-width="1.5"/>
+  <!-- Right handle -->
+  <rect x="42" y="10" width="20" height="6" rx="2" fill="#EF4444" stroke="#B91C1C" stroke-width="1.5"/>
+  <!-- Pliers head/jaws -->
+  <ellipse cx="32" cy="13" rx="12" ry="8" fill="#6B7280" stroke="#374151" stroke-width="1.5"/>
+  <!-- Jaw details -->
+  <line x1="24" y1="13" x2="28" y2="13" stroke="#374151" stroke-width="2"/>
+  <line x1="36" y1="13" x2="40" y2="13" stroke="#374151" stroke-width="2"/>
+  <!-- Pivot -->
+  <circle cx="32" cy="13" r="3" fill="#4B5563" stroke="#374151" stroke-width="1"/>
+
+  <!-- Chisel (stem) -->
+  <!-- Handle -->
+  <rect x="26" y="22" width="12" height="18" rx="3" fill="#D97706" stroke="#92400E" stroke-width="1.5"/>
+  <rect x="28" y="24" width="8" height="4" rx="1" fill="#FCD34D" opacity="0.4"/>
+  <!-- Metal ferrule -->
+  <rect x="28" y="40" width="8" height="4" fill="#9CA3AF" stroke="#6B7280" stroke-width="1"/>
+  <!-- Blade -->
+  <path d="M28 44 L36 44 L36 54 L32 60 L28 54 Z" fill="#D1D5DB" stroke="#6B7280" stroke-width="1.5"/>
+  <!-- Blade bevel highlight -->
+  <path d="M30 46 L34 46 L34 52 L32 56 L30 52 Z" fill="#F3F4F6" opacity="0.5"/>
+</svg>
