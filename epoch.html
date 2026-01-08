@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epoch Converter</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .container {
+            text-align: center;
+            padding: 2rem;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 {
+            color: white;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            font-weight: 300;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.25rem;
+            border: none;
+            border-radius: 8px;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+            outline: none;
+            transition: box-shadow 0.2s ease;
+        }
+
+        input:focus {
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+        }
+
+        input::placeholder {
+            color: #999;
+        }
+
+        .result {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .result-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-value {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 300;
+            word-break: break-word;
+        }
+
+        .result-value.empty {
+            color: rgba(255, 255, 255, 0.5);
+            font-style: italic;
+        }
+
+        .format-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 1rem;
+        }
+
+        .format-badge.hidden {
+            display: none;
+        }
+
+        .current-time {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .current-time .result-label {
+            margin-bottom: 0.75rem;
+        }
+
+        .current-epochs {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .epoch-display {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .epoch-display:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .epoch-display .label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .epoch-display .value {
+            color: white;
+            font-size: 1rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .copy-hint {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .copied {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+
+        .copied.show {
+            opacity: 1;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-2px);
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .result-value {
+                font-size: 1.25rem;
+            }
+
+            .current-epochs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-btn" title="Back to apps">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+    </a>
+
+    <div class="container">
+        <h1>Epoch Converter</h1>
+
+        <div class="input-group">
+            <input
+                type="text"
+                id="epochInput"
+                placeholder="Enter Unix timestamp..."
+                autocomplete="off"
+            >
+        </div>
+
+        <div class="result">
+            <div class="result-label">Human Readable</div>
+            <div class="result-value empty" id="resultValue">Enter a timestamp above</div>
+            <div class="format-badge hidden" id="formatBadge"></div>
+        </div>
+
+        <div class="current-time">
+            <div class="result-label">Current Time</div>
+            <div class="current-epochs">
+                <div class="epoch-display" id="secondsDisplay" title="Click to copy">
+                    <div class="label">Seconds</div>
+                    <div class="value" id="currentSeconds">-</div>
+                </div>
+                <div class="epoch-display" id="millisDisplay" title="Click to copy">
+                    <div class="label">Milliseconds</div>
+                    <div class="value" id="currentMillis">-</div>
+                </div>
+            </div>
+            <div class="copy-hint">Click to copy</div>
+        </div>
+    </div>
+
+    <div class="copied" id="copiedToast">Copied!</div>
+
+    <script>
+        const epochInput = document.getElementById('epochInput');
+        const resultValue = document.getElementById('resultValue');
+        const formatBadge = document.getElementById('formatBadge');
+        const currentSeconds = document.getElementById('currentSeconds');
+        const currentMillis = document.getElementById('currentMillis');
+        const secondsDisplay = document.getElementById('secondsDisplay');
+        const millisDisplay = document.getElementById('millisDisplay');
+        const copiedToast = document.getElementById('copiedToast');
+
+        // Detect if timestamp is in seconds or milliseconds
+        function detectFormat(timestamp) {
+            // Timestamps before year 2001 in seconds: < 1000000000 (9 digits)
+            // Timestamps after year 2001 in seconds: >= 1000000000 (10 digits)
+            // Timestamps in milliseconds: >= 1000000000000 (13 digits)
+            //
+            // Heuristic: if the number is >= 10^12, it's likely milliseconds
+            // This covers dates from ~1970 to ~2286 in seconds
+            // and dates from ~2001 to ~2286 in milliseconds
+            const threshold = 1e12; // Sep 9, 2001 in milliseconds
+
+            if (timestamp >= threshold) {
+                return 'milliseconds';
+            }
+            return 'seconds';
+        }
+
+        function formatDate(date) {
+            const options = {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                timeZoneName: 'short'
+            };
+            return date.toLocaleString(undefined, options);
+        }
+
+        function convertEpoch(input) {
+            const trimmed = input.trim();
+
+            if (!trimmed) {
+                resultValue.textContent = 'Enter a timestamp above';
+                resultValue.classList.add('empty');
+                formatBadge.classList.add('hidden');
+                return;
+            }
+
+            const timestamp = parseInt(trimmed, 10);
+
+            if (isNaN(timestamp)) {
+                resultValue.textContent = 'Invalid timestamp';
+                resultValue.classList.add('empty');
+                formatBadge.classList.add('hidden');
+                return;
+            }
+
+            const format = detectFormat(timestamp);
+            const milliseconds = format === 'milliseconds' ? timestamp : timestamp * 1000;
+            const date = new Date(milliseconds);
+
+            // Check if date is valid
+            if (isNaN(date.getTime())) {
+                resultValue.textContent = 'Invalid timestamp';
+                resultValue.classList.add('empty');
+                formatBadge.classList.add('hidden');
+                return;
+            }
+
+            resultValue.textContent = formatDate(date);
+            resultValue.classList.remove('empty');
+            formatBadge.textContent = `Detected: ${format}`;
+            formatBadge.classList.remove('hidden');
+        }
+
+        function updateCurrentTime() {
+            const now = Date.now();
+            currentSeconds.textContent = Math.floor(now / 1000);
+            currentMillis.textContent = now;
+        }
+
+        function showCopiedToast() {
+            copiedToast.classList.add('show');
+            setTimeout(() => {
+                copiedToast.classList.remove('show');
+            }, 1500);
+        }
+
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                showCopiedToast();
+            } catch (err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showCopiedToast();
+            }
+        }
+
+        // Event listeners
+        epochInput.addEventListener('input', (e) => {
+            convertEpoch(e.target.value);
+        });
+
+        secondsDisplay.addEventListener('click', () => {
+            copyToClipboard(currentSeconds.textContent);
+        });
+
+        millisDisplay.addEventListener('click', () => {
+            copyToClipboard(currentMillis.textContent);
+        });
+
+        // Update current time every second
+        updateCurrentTime();
+        setInterval(updateCurrentTime, 1000);
+    </script>
+</body>
+</html>
