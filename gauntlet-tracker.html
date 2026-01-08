@@ -29,6 +29,35 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-2px);
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
         h1 {
             font-size: 1.5rem;
             font-weight: 600;
@@ -188,7 +217,14 @@
 </head>
 <body>
     <header>
-        <h1>Gauntlet Performance Tracker Charted</h1>
+        <div class="header-left">
+            <a href="/" class="back-btn" title="Back to apps">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+            </a>
+            <h1>Gauntlet Performance Tracker Charted</h1>
+        </div>
         <div class="header-actions">
             <input type="file" id="fileInput" accept=".json" multiple>
             <button class="btn btn-upload" id="uploadBtn">Upload Files</button>
