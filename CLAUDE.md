@@ -15,6 +15,16 @@ This is the `bapps` repository - a collection of simple browser-based utility ap
 
 ## Development Conventions
 
+### Favicon
+
+All pages must include the hammer favicon. Add this line in the `<head>` section after the `<title>` tag:
+
+```html
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+```
+
+The favicon is located at `favicon.svg` in the project root.
+
 ### Navigation
 
 All apps must include a back button in the top-left corner that links to the home page (`/`). Use this standard implementation:
