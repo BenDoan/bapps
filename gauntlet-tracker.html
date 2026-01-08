@@ -310,6 +310,52 @@
         const chartsGrid = document.getElementById('chartsGrid');
         const fileCount = document.getElementById('fileCount');
 
+        // URL data storage functions
+        function saveToUrl() {
+            if (sessions.length === 0) {
+                history.replaceState(null, '', window.location.pathname);
+                return;
+            }
+            // Store only dateStr and data (no username)
+            const dataToStore = sessions.map(s => ({
+                d: s.dateStr,
+                v: s.data
+            }));
+            const json = JSON.stringify(dataToStore);
+            const encoded = btoa(encodeURIComponent(json));
+            history.replaceState(null, '', '#' + encoded);
+        }
+
+        function loadFromUrl() {
+            const hash = window.location.hash.slice(1);
+            if (!hash) return false;
+
+            try {
+                const json = decodeURIComponent(atob(hash));
+                const dataFromUrl = JSON.parse(json);
+
+                sessions = dataFromUrl.map(item => {
+                    // Parse dateStr to create date object
+                    const [datePart, timePart] = item.d.split(' ');
+                    const [year, month, day] = datePart.split('-').map(Number);
+                    const [hour, minute] = timePart.split(':').map(Number);
+
+                    return {
+                        username: 'shared',
+                        date: new Date(year, month - 1, day, hour, minute),
+                        dateStr: item.d,
+                        data: item.v
+                    };
+                });
+
+                sessions.sort((a, b) => a.date - b.date);
+                return true;
+            } catch (e) {
+                console.error('Failed to load data from URL:', e);
+                return false;
+            }
+        }
+
         // Parse filename to extract date
         function parseFilename(filename) {
             // Format: gauntletTracker-username-YYYY-MM-DD-HH-MM.json
@@ -362,6 +408,7 @@
             // Sort sessions by date
             sessions.sort((a, b) => a.date - b.date);
 
+            saveToUrl();
             updateUI();
         }
 
@@ -558,6 +605,7 @@
         // Reset
         function reset() {
             sessions = [];
+            saveToUrl();
             updateUI();
         }
 
@@ -609,6 +657,7 @@
             }
 
             sessions = demoSessions;
+            saveToUrl();
             updateUI();
         }
 
@@ -635,7 +684,8 @@
             resizeTimeout = setTimeout(updateUI, 100);
         });
 
-        // Initial UI
+        // Initial load - check URL for shared data
+        loadFromUrl();
         updateUI();
     </script>
 </body>
