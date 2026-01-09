@@ -370,7 +370,8 @@
                 return {
                     owner: treeMatch[1],
                     repo: treeMatch[2],
-                    branch: treeMatch[3]
+                    branch: treeMatch[3],
+                    isCompare: false
                 };
             }
 
@@ -380,7 +381,8 @@
                 return {
                     owner: compareMatch[1],
                     repo: compareMatch[2],
-                    branch: compareMatch[3]
+                    branch: compareMatch[3],
+                    isCompare: true
                 };
             }
 
@@ -390,7 +392,8 @@
                 return {
                     owner: parts[0],
                     repo: parts[1],
-                    branch: parts.slice(2).join('/')
+                    branch: parts.slice(2).join('/'),
+                    isCompare: false
                 };
             }
 
@@ -422,8 +425,26 @@
             showStatus('Fetching files...', 'loading');
             fetchBtn.disabled = true;
 
+            let changedHtmlFiles = [];
+
             try {
-                // Use GitHub API to get tree
+                // If compare URL, fetch changed files first
+                if (parsed.isCompare) {
+                    try {
+                        const compareUrl = `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/compare/HEAD...${parsed.branch}`;
+                        const compareResponse = await fetch(compareUrl);
+                        if (compareResponse.ok) {
+                            const compareData = await compareResponse.json();
+                            changedHtmlFiles = compareData.files
+                                .filter(file => file.filename.endsWith('.html'))
+                                .map(file => file.filename);
+                        }
+                    } catch (e) {
+                        // Ignore compare errors, fall back to all files
+                    }
+                }
+
+                // Use GitHub API to get tree for all HTML files
                 const apiUrl = `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/${parsed.branch}?recursive=1`;
                 const response = await fetch(apiUrl);
 
@@ -450,15 +471,26 @@
                     return;
                 }
 
-                // Populate select
-                fileSelect.innerHTML = htmlFiles.map(file =>
-                    `<option value="${file}">${file}</option>`
-                ).join('');
+                // Populate select, marking changed files
+                const changedSet = new Set(changedHtmlFiles);
+                fileSelect.innerHTML = htmlFiles.map(file => {
+                    const isChanged = changedSet.has(file);
+                    const label = isChanged ? `${file} (changed)` : file;
+                    return `<option value="${file}">${label}</option>`;
+                }).join('');
+
+                // Default to first changed file if available
+                if (changedHtmlFiles.length > 0 && htmlFiles.includes(changedHtmlFiles[0])) {
+                    fileSelect.value = changedHtmlFiles[0];
+                }
 
                 fileSelect.disabled = false;
                 renderBtn.disabled = false;
 
-                showStatus(`Found ${htmlFiles.length} HTML file${htmlFiles.length > 1 ? 's' : ''}`, 'success');
+                const statusMsg = changedHtmlFiles.length > 0
+                    ? `Found ${htmlFiles.length} HTML file${htmlFiles.length > 1 ? 's' : ''} (${changedHtmlFiles.length} changed)`
+                    : `Found ${htmlFiles.length} HTML file${htmlFiles.length > 1 ? 's' : ''}`;
+                showStatus(statusMsg, 'success');
 
             } catch (error) {
                 showStatus(`Error: ${error.message}`, 'error');
