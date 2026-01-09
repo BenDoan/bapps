@@ -492,6 +492,9 @@
                     : `Found ${htmlFiles.length} HTML file${htmlFiles.length > 1 ? 's' : ''}`;
                 showStatus(statusMsg, 'success');
 
+                // Auto-render the selected file
+                await renderFile();
+
             } catch (error) {
                 showStatus(`Error: ${error.message}`, 'error');
                 fileSelect.innerHTML = '<option value="">-- Error fetching files --</option>';
