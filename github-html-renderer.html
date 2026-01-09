@@ -302,7 +302,7 @@
                     id="branchInput"
                     placeholder="owner/repo/branch or https://github.com/owner/repo/tree/branch"
                 >
-                <p class="help-text">Examples: BenDoan/bapps/main or https://github.com/BenDoan/bapps/tree/main</p>
+                <p class="help-text">Examples: BenDoan/bapps/main, /tree/branch, or /compare/branch URLs</p>
             </div>
 
             <div class="form-group">
@@ -365,12 +365,22 @@
             input = input.trim();
 
             // Handle full GitHub URL: https://github.com/owner/repo/tree/branch
-            const urlMatch = input.match(/github\.com\/([^/]+)\/([^/]+)\/tree\/(.+)/);
-            if (urlMatch) {
+            const treeMatch = input.match(/github\.com\/([^/]+)\/([^/]+)\/tree\/(.+)/);
+            if (treeMatch) {
                 return {
-                    owner: urlMatch[1],
-                    repo: urlMatch[2],
-                    branch: urlMatch[3]
+                    owner: treeMatch[1],
+                    repo: treeMatch[2],
+                    branch: treeMatch[3]
+                };
+            }
+
+            // Handle compare URL: https://github.com/owner/repo/compare/branch
+            const compareMatch = input.match(/github\.com\/([^/]+)\/([^/]+)\/compare\/(.+)/);
+            if (compareMatch) {
+                return {
+                    owner: compareMatch[1],
+                    repo: compareMatch[2],
+                    branch: compareMatch[3]
                 };
             }
 
