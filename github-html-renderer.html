@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub HTML Renderer</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            z-index: 1000;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-2px);
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding-top: 2rem;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .input-section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: #667eea;
+        }
+
+        input[type="text"]::placeholder {
+            color: #9ca3af;
+        }
+
+        select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            outline: none;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+        }
+
+        select:focus {
+            border-color: #667eea;
+        }
+
+        select:disabled {
+            background: #f3f4f6;
+            cursor: not-allowed;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            flex: 1;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #4b5563;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .status.loading {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+
+        .render-section {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .render-section.show {
+            display: block;
+        }
+
+        .render-header {
+            background: #f3f4f6;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .render-title {
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.9rem;
+        }
+
+        .render-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .render-actions button {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.8rem;
+        }
+
+        .iframe-container {
+            position: relative;
+            width: 100%;
+            height: 70vh;
+            min-height: 400px;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .help-text {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .btn-row {
+                flex-direction: column;
+            }
+
+            .btn-row button {
+                width: 100%;
+            }
+
+            .iframe-container {
+                height: 50vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-btn" title="Back to apps">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+    </a>
+
+    <div class="container">
+        <header>
+            <h1>GitHub HTML Renderer</h1>
+            <p class="subtitle">Render HTML files from any GitHub branch</p>
+        </header>
+
+        <div class="input-section">
+            <div class="form-group">
+                <label for="branchInput">GitHub Branch</label>
+                <input
+                    type="text"
+                    id="branchInput"
+                    placeholder="owner/repo/branch or https://github.com/owner/repo/tree/branch"
+                >
+                <p class="help-text">Examples: BenDoan/bapps/main or https://github.com/BenDoan/bapps/tree/main</p>
+            </div>
+
+            <div class="form-group">
+                <div class="btn-row">
+                    <button id="fetchBtn" class="btn-primary">Fetch HTML Files</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="fileSelect">Select HTML File</label>
+                <select id="fileSelect" disabled>
+                    <option value="">-- Fetch files first --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <div class="btn-row">
+                    <button id="renderBtn" class="btn-primary" disabled>Render</button>
+                    <button id="clearBtn" class="btn-secondary">Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <div id="renderSection" class="render-section">
+            <div class="render-header">
+                <span class="render-title" id="renderTitle">Rendering: file.html</span>
+                <div class="render-actions">
+                    <button id="openNewTabBtn" class="btn-secondary">Open in New Tab</button>
+                </div>
+            </div>
+            <div class="iframe-container">
+                <iframe id="renderFrame" sandbox="allow-scripts allow-same-origin"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let currentRepo = null;
+        let currentBranch = null;
+        let htmlFiles = [];
+        let currentRawUrl = null;
+
+        // DOM Elements
+        const branchInput = document.getElementById('branchInput');
+        const fetchBtn = document.getElementById('fetchBtn');
+        const fileSelect = document.getElementById('fileSelect');
+        const renderBtn = document.getElementById('renderBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const status = document.getElementById('status');
+        const renderSection = document.getElementById('renderSection');
+        const renderTitle = document.getElementById('renderTitle');
+        const renderFrame = document.getElementById('renderFrame');
+        const openNewTabBtn = document.getElementById('openNewTabBtn');
+
+        // Parse GitHub branch input
+        function parseBranchInput(input) {
+            input = input.trim();
+
+            // Handle full GitHub URL: https://github.com/owner/repo/tree/branch
+            const urlMatch = input.match(/github\.com\/([^/]+)\/([^/]+)\/tree\/(.+)/);
+            if (urlMatch) {
+                return {
+                    owner: urlMatch[1],
+                    repo: urlMatch[2],
+                    branch: urlMatch[3]
+                };
+            }
+
+            // Handle short format: owner/repo/branch
+            const parts = input.split('/');
+            if (parts.length >= 3) {
+                return {
+                    owner: parts[0],
+                    repo: parts[1],
+                    branch: parts.slice(2).join('/')
+                };
+            }
+
+            return null;
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            status.textContent = message;
+            status.className = `status show ${type}`;
+        }
+
+        function hideStatus() {
+            status.className = 'status';
+        }
+
+        // Fetch HTML files from branch
+        async function fetchHtmlFiles() {
+            const parsed = parseBranchInput(branchInput.value);
+
+            if (!parsed) {
+                showStatus('Invalid input. Use format: owner/repo/branch or full GitHub URL', 'error');
+                return;
+            }
+
+            currentRepo = `${parsed.owner}/${parsed.repo}`;
+            currentBranch = parsed.branch;
+
+            showStatus('Fetching files...', 'loading');
+            fetchBtn.disabled = true;
+
+            try {
+                // Use GitHub API to get tree
+                const apiUrl = `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/${parsed.branch}?recursive=1`;
+                const response = await fetch(apiUrl);
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Repository or branch not found. Check if the repo is public.');
+                    }
+                    throw new Error(`GitHub API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Filter for HTML files
+                htmlFiles = data.tree
+                    .filter(item => item.type === 'blob' && item.path.endsWith('.html'))
+                    .map(item => item.path)
+                    .sort();
+
+                if (htmlFiles.length === 0) {
+                    showStatus('No HTML files found in this branch', 'error');
+                    fileSelect.innerHTML = '<option value="">-- No HTML files found --</option>';
+                    fileSelect.disabled = true;
+                    renderBtn.disabled = true;
+                    return;
+                }
+
+                // Populate select
+                fileSelect.innerHTML = htmlFiles.map(file =>
+                    `<option value="${file}">${file}</option>`
+                ).join('');
+
+                fileSelect.disabled = false;
+                renderBtn.disabled = false;
+
+                showStatus(`Found ${htmlFiles.length} HTML file${htmlFiles.length > 1 ? 's' : ''}`, 'success');
+
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                fileSelect.innerHTML = '<option value="">-- Error fetching files --</option>';
+                fileSelect.disabled = true;
+                renderBtn.disabled = true;
+            } finally {
+                fetchBtn.disabled = false;
+            }
+        }
+
+        // Render selected HTML file
+        async function renderFile() {
+            const selectedFile = fileSelect.value;
+
+            if (!selectedFile || !currentRepo || !currentBranch) {
+                showStatus('Please select a file to render', 'error');
+                return;
+            }
+
+            showStatus('Loading file...', 'loading');
+            renderBtn.disabled = true;
+
+            try {
+                // Construct raw GitHub URL
+                currentRawUrl = `https://raw.githubusercontent.com/${currentRepo}/${currentBranch}/${selectedFile}`;
+
+                const response = await fetch(currentRawUrl);
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch file: ${response.status}`);
+                }
+
+                const html = await response.text();
+
+                // Inject base tag to handle relative URLs
+                const baseUrl = `https://raw.githubusercontent.com/${currentRepo}/${currentBranch}/`;
+                const modifiedHtml = html.replace(
+                    /<head([^>]*)>/i,
+                    `<head$1><base href="${baseUrl}">`
+                );
+
+                // Render in iframe using srcdoc
+                renderFrame.srcdoc = modifiedHtml;
+
+                renderTitle.textContent = `Rendering: ${selectedFile}`;
+                renderSection.classList.add('show');
+                hideStatus();
+
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                renderBtn.disabled = false;
+            }
+        }
+
+        // Clear everything
+        function clearAll() {
+            branchInput.value = '';
+            fileSelect.innerHTML = '<option value="">-- Fetch files first --</option>';
+            fileSelect.disabled = true;
+            renderBtn.disabled = true;
+            renderFrame.srcdoc = '';
+            renderSection.classList.remove('show');
+            hideStatus();
+            currentRepo = null;
+            currentBranch = null;
+            htmlFiles = [];
+            currentRawUrl = null;
+        }
+
+        // Open in new tab
+        function openInNewTab() {
+            if (currentRawUrl) {
+                window.open(currentRawUrl, '_blank');
+            }
+        }
+
+        // Event listeners
+        fetchBtn.addEventListener('click', fetchHtmlFiles);
+        renderBtn.addEventListener('click', renderFile);
+        clearBtn.addEventListener('click', clearAll);
+        openNewTabBtn.addEventListener('click', openInNewTab);
+
+        // Enter key to fetch
+        branchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                fetchHtmlFiles();
+            }
+        });
+
+        // Auto-render on file selection change
+        fileSelect.addEventListener('change', () => {
+            if (fileSelect.value && !fileSelect.disabled) {
+                renderFile();
+            }
+        });
+
+        // Check URL params for pre-filled branch
+        const urlParams = new URLSearchParams(window.location.search);
+        const branchParam = urlParams.get('branch');
+        if (branchParam) {
+            branchInput.value = branchParam;
+            fetchHtmlFiles();
+        }
+    </script>
+</body>
+</html>
