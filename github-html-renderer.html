@@ -364,6 +364,9 @@
         function parseBranchInput(input) {
             input = input.trim();
 
+            // Remove query string and hash fragment from URL
+            input = input.split('?')[0].split('#')[0];
+
             // Handle full GitHub URL: https://github.com/owner/repo/tree/branch
             const treeMatch = input.match(/github\.com\/([^/]+)\/([^/]+)\/tree\/(.+)/);
             if (treeMatch) {
