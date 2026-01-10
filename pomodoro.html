@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding-top: 2rem;
+        }
+
+        .timer-section {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .status {
+            font-size: 1.25rem;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+            opacity: 0.9;
+        }
+
+        .status.work {
+            color: #fbbf24;
+        }
+
+        .status.break {
+            color: #34d399;
+        }
+
+        .status.long-break {
+            color: #60a5fa;
+        }
+
+        .display {
+            font-size: clamp(4rem, 20vw, 8rem);
+            font-weight: 300;
+            color: white;
+            margin-bottom: 1rem;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.05em;
+        }
+
+        .pomodoro-count {
+            font-size: 1rem;
+            color: white;
+            opacity: 0.8;
+            margin-bottom: 1.5rem;
+        }
+
+        .pomodoro-dots {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transition: background 0.3s ease;
+        }
+
+        .dot.completed {
+            background: #fbbf24;
+        }
+
+        .description-input {
+            width: 100%;
+            max-width: 300px;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .description-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .description-input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .description-input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 1rem 2rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 100px;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        #startBtn {
+            background-color: #10b981;
+        }
+
+        #startBtn:hover:not(:disabled) {
+            background-color: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        #pauseBtn {
+            background-color: #f59e0b;
+        }
+
+        #pauseBtn:hover:not(:disabled) {
+            background-color: #d97706;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+
+        #resetBtn {
+            background-color: #6b7280;
+        }
+
+        #resetBtn:hover:not(:disabled) {
+            background-color: #4b5563;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+        }
+
+        #skipBtn {
+            background-color: #8b5cf6;
+        }
+
+        #skipBtn:hover:not(:disabled) {
+            background-color: #7c3aed;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        button:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-2px);
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        .history-section {
+            margin-top: 3rem;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .history-title {
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .clear-history-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            background-color: #ef4444;
+            min-width: auto;
+        }
+
+        .clear-history-btn:hover:not(:disabled) {
+            background-color: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+
+        .history-table {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .history-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .history-table th,
+        .history-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+        }
+
+        .history-table th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .history-table td {
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.9rem;
+            color: #374151;
+        }
+
+        .history-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .history-table tr:hover td {
+            background: #f9fafb;
+        }
+
+        .delete-btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            background-color: #ef4444;
+            min-width: auto;
+        }
+
+        .delete-btn:hover {
+            background-color: #dc2626;
+        }
+
+        .no-history {
+            padding: 2rem;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        .notification-banner {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .notification-banner.show {
+            display: block;
+        }
+
+        .notification-banner button {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+            min-width: auto;
+            background: #ef4444;
+        }
+
+        .finished {
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                color: white;
+            }
+            50% {
+                color: #fbbf24;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding-top: 3rem;
+            }
+
+            .buttons {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .history-table th,
+            .history-table td {
+                padding: 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            .history-header {
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-btn" title="Back to apps">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+    </a>
+
+    <div class="container">
+        <div class="timer-section">
+            <div class="notification-banner" id="notificationBanner">
+                Notifications are blocked. Enable them to get alerts when timers finish.
+                <button onclick="requestNotificationPermission()">Enable</button>
+            </div>
+
+            <div class="status" id="status">Work Session</div>
+            <div class="display" id="display">25:00</div>
+
+            <div class="pomodoro-dots" id="pomodoroDots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+
+            <div class="pomodoro-count" id="pomodoroCount">0 pomodoros completed today</div>
+
+            <input
+                type="text"
+                class="description-input"
+                id="descriptionInput"
+                placeholder="What are you working on? (optional)"
+                maxlength="100"
+            >
+
+            <div class="buttons">
+                <button id="startBtn">Start</button>
+                <button id="pauseBtn" disabled>Pause</button>
+                <button id="skipBtn">Skip</button>
+                <button id="resetBtn">Reset</button>
+            </div>
+        </div>
+
+        <div class="history-section">
+            <div class="history-header">
+                <h2 class="history-title">Completed Pomodoros</h2>
+                <button class="clear-history-btn" id="clearHistoryBtn">Clear All</button>
+            </div>
+            <div class="history-table" id="historyTable">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Description</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants
+        const WORK_DURATION = 25 * 60; // 25 minutes
+        const SHORT_BREAK = 5 * 60;    // 5 minutes
+        const LONG_BREAK = 30 * 60;    // 30 minutes
+        const POMODOROS_BEFORE_LONG_BREAK = 4;
+
+        // State
+        let timeRemaining = WORK_DURATION;
+        let interval = null;
+        let isRunning = false;
+        let isBreak = false;
+        let isLongBreak = false;
+        let completedInCycle = 0; // Pomodoros completed in current cycle (0-4)
+        let history = [];
+
+        // DOM elements
+        const display = document.getElementById('display');
+        const status = document.getElementById('status');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const skipBtn = document.getElementById('skipBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const descriptionInput = document.getElementById('descriptionInput');
+        const pomodoroCount = document.getElementById('pomodoroCount');
+        const pomodoroDots = document.getElementById('pomodoroDots');
+        const historyBody = document.getElementById('historyBody');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        const notificationBanner = document.getElementById('notificationBanner');
+
+        // Initialize
+        function init() {
+            loadHistory();
+            updateDisplay();
+            updateDots();
+            updatePomodoroCount();
+            renderHistory();
+            requestNotificationPermission();
+            checkNotificationStatus();
+        }
+
+        // Notification permission
+        function requestNotificationPermission() {
+            if ('Notification' in window) {
+                if (Notification.permission === 'default') {
+                    Notification.requestPermission().then(permission => {
+                        checkNotificationStatus();
+                    });
+                }
+            }
+        }
+
+        function checkNotificationStatus() {
+            if ('Notification' in window) {
+                if (Notification.permission === 'denied') {
+                    notificationBanner.classList.add('show');
+                } else {
+                    notificationBanner.classList.remove('show');
+                }
+            }
+        }
+
+        // Format time
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Update display
+        function updateDisplay() {
+            display.textContent = formatTime(timeRemaining);
+
+            // Update page title
+            const statusText = isBreak ? (isLongBreak ? 'Long Break' : 'Break') : 'Work';
+            document.title = `${formatTime(timeRemaining)} - ${statusText} | Pomodoro`;
+        }
+
+        // Update status text
+        function updateStatus() {
+            if (isLongBreak) {
+                status.textContent = 'Long Break';
+                status.className = 'status long-break';
+            } else if (isBreak) {
+                status.textContent = 'Short Break';
+                status.className = 'status break';
+            } else {
+                status.textContent = 'Work Session';
+                status.className = 'status work';
+            }
+        }
+
+        // Update dots
+        function updateDots() {
+            const dots = pomodoroDots.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                if (index < completedInCycle) {
+                    dot.classList.add('completed');
+                } else {
+                    dot.classList.remove('completed');
+                }
+            });
+        }
+
+        // Update pomodoro count
+        function updatePomodoroCount() {
+            const today = new Date().toDateString();
+            const todayCount = history.filter(p =>
+                new Date(p.timestamp).toDateString() === today
+            ).length;
+            pomodoroCount.textContent = `${todayCount} pomodoro${todayCount !== 1 ? 's' : ''} completed today`;
+        }
+
+        // Start timer
+        function start() {
+            if (isRunning) return;
+
+            isRunning = true;
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            descriptionInput.disabled = true;
+            display.classList.remove('finished');
+
+            interval = setInterval(() => {
+                timeRemaining--;
+                updateDisplay();
+
+                if (timeRemaining <= 0) {
+                    finish();
+                }
+            }, 1000);
+        }
+
+        // Pause timer
+        function pause() {
+            if (!isRunning) return;
+
+            isRunning = false;
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+
+            clearInterval(interval);
+        }
+
+        // Reset timer
+        function reset() {
+            pause();
+            isBreak = false;
+            isLongBreak = false;
+            completedInCycle = 0;
+            timeRemaining = WORK_DURATION;
+            updateDisplay();
+            updateStatus();
+            updateDots();
+            descriptionInput.disabled = false;
+            display.classList.remove('finished');
+            document.title = 'Pomodoro Timer';
+        }
+
+        // Skip current session
+        function skip() {
+            pause();
+            transitionToNext();
+        }
+
+        // Finish current session
+        function finish() {
+            pause();
+            display.classList.add('finished');
+
+            // Play alarm sound
+            playAlarm();
+
+            if (!isBreak) {
+                // Completed a work session
+                const description = descriptionInput.value.trim();
+                addToHistory(description);
+                completedInCycle++;
+                updateDots();
+                updatePomodoroCount();
+                renderHistory();
+
+                // Show notification
+                showNotification('Pomodoro Complete!',
+                    description ? `"${description}" completed. Time for a break!` : 'Great work! Time for a break.');
+            } else {
+                // Completed a break
+                showNotification('Break Over!', 'Time to get back to work!');
+            }
+
+            // Auto-transition after a short delay
+            setTimeout(() => {
+                display.classList.remove('finished');
+                transitionToNext();
+            }, 2000);
+        }
+
+        // Transition to next phase
+        function transitionToNext() {
+            if (isBreak) {
+                // Was on break, go to work
+                isBreak = false;
+                isLongBreak = false;
+                timeRemaining = WORK_DURATION;
+                descriptionInput.disabled = false;
+                descriptionInput.value = '';
+            } else {
+                // Was working, go to break
+                isBreak = true;
+
+                if (completedInCycle >= POMODOROS_BEFORE_LONG_BREAK) {
+                    // Long break
+                    isLongBreak = true;
+                    timeRemaining = LONG_BREAK;
+                    completedInCycle = 0;
+                    updateDots();
+                } else {
+                    // Short break
+                    isLongBreak = false;
+                    timeRemaining = SHORT_BREAK;
+                }
+                descriptionInput.disabled = true;
+            }
+
+            updateDisplay();
+            updateStatus();
+        }
+
+        // Play alarm sound
+        function playAlarm() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+                // Play a sequence of beeps
+                const frequencies = [800, 1000, 800, 1000, 800];
+                const duration = 0.15;
+                const gap = 0.1;
+
+                frequencies.forEach((freq, i) => {
+                    const startTime = audioContext.currentTime + i * (duration + gap);
+
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    oscillator.frequency.value = freq;
+                    oscillator.type = 'sine';
+
+                    gainNode.gain.setValueAtTime(0.3, startTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+
+                    oscillator.start(startTime);
+                    oscillator.stop(startTime + duration);
+                });
+            } catch (e) {
+                // Silent fail if audio not supported
+            }
+        }
+
+        // Show notification
+        function showNotification(title, body) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification(title, {
+                    body: body,
+                    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="75" font-size="75">🍅</text></svg>'
+                });
+            }
+        }
+
+        // History management
+        function loadHistory() {
+            const stored = localStorage.getItem('pomodoroHistory');
+            if (stored) {
+                try {
+                    history = JSON.parse(stored);
+                } catch (e) {
+                    history = [];
+                }
+            }
+        }
+
+        function saveHistory() {
+            localStorage.setItem('pomodoroHistory', JSON.stringify(history));
+        }
+
+        function addToHistory(description) {
+            const entry = {
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                description: description || ''
+            };
+            history.unshift(entry);
+            saveHistory();
+        }
+
+        function deleteFromHistory(id) {
+            history = history.filter(entry => entry.id !== id);
+            saveHistory();
+            renderHistory();
+            updatePomodoroCount();
+        }
+
+        function clearHistory() {
+            if (confirm('Are you sure you want to delete all pomodoro history?')) {
+                history = [];
+                saveHistory();
+                renderHistory();
+                updatePomodoroCount();
+            }
+        }
+
+        function renderHistory() {
+            if (history.length === 0) {
+                historyBody.innerHTML = '<tr><td colspan="4" class="no-history">No completed pomodoros yet</td></tr>';
+                return;
+            }
+
+            historyBody.innerHTML = history.map(entry => {
+                const date = new Date(entry.timestamp);
+                const dateStr = date.toLocaleDateString();
+                const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const desc = entry.description || '<em style="color: #9ca3af;">No description</em>';
+
+                return `
+                    <tr>
+                        <td>${dateStr}</td>
+                        <td>${timeStr}</td>
+                        <td>${desc}</td>
+                        <td>
+                            <button class="delete-btn" onclick="deleteFromHistory(${entry.id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', start);
+        pauseBtn.addEventListener('click', pause);
+        skipBtn.addEventListener('click', skip);
+        resetBtn.addEventListener('click', reset);
+        clearHistoryBtn.addEventListener('click', clearHistory);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.target === descriptionInput) return;
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (isRunning) {
+                    pause();
+                } else {
+                    start();
+                }
+            } else if (e.code === 'KeyR') {
+                reset();
+            } else if (e.code === 'KeyS') {
+                skip();
+            }
+        });
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
