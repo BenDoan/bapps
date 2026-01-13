@@ -254,6 +254,13 @@
         const minutesInput = document.getElementById('minutesInput');
         const secondsInput = document.getElementById('secondsInput');
 
+        // Favicon elements
+        const faviconLink = document.querySelector('link[rel="icon"]');
+        const faviconCanvas = document.createElement('canvas');
+        faviconCanvas.width = 32;
+        faviconCanvas.height = 32;
+        const faviconCtx = faviconCanvas.getContext('2d');
+
         function formatTime(totalSeconds) {
             const hours = Math.floor(totalSeconds / 3600);
             const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -264,8 +271,56 @@
                 .join(':');
         }
 
+        function formatFaviconTime(totalSeconds) {
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const secs = totalSeconds % 60;
+
+            if (hours > 0) {
+                return `${hours}:${minutes.toString().padStart(2, '0')}`;
+            }
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function updateFavicon() {
+            const ctx = faviconCtx;
+            const size = 32;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, size, size);
+
+            // Draw background circle
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2);
+            ctx.fillStyle = '#667eea';
+            ctx.fill();
+
+            // Draw time text
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const timeText = formatFaviconTime(totalSeconds);
+            if (timeText.length <= 4) {
+                ctx.font = 'bold 11px sans-serif';
+            } else {
+                ctx.font = 'bold 9px sans-serif';
+            }
+            ctx.fillText(timeText, size / 2, size / 2 + 1);
+
+            // Update favicon
+            faviconLink.href = faviconCanvas.toDataURL('image/png');
+        }
+
+        function resetFavicon() {
+            faviconLink.href = '/favicon.svg';
+        }
+
         function updateDisplay() {
             display.textContent = formatTime(totalSeconds);
+            if (isRunning || totalSeconds > 0) {
+                updateFavicon();
+            }
         }
 
         function getInputTime() {
@@ -344,6 +399,7 @@
                 totalSeconds = 300;
                 updateDisplay();
             }
+            updateFavicon();
         }
 
         function finish() {
@@ -352,6 +408,7 @@
             updateDisplay();
             display.classList.add('finished');
             toggleInputs(true);
+            resetFavicon();
 
             // Play notification sound (if supported)
             try {
@@ -413,6 +470,7 @@
         // Initialize display
         totalSeconds = getInputTime();
         updateDisplay();
+        updateFavicon();
     </script>
 </body>
 </html>
