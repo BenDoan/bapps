@@ -444,6 +444,7 @@
 
         // State
         let timeRemaining = WORK_DURATION;
+        let initialDuration = WORK_DURATION; // Track initial duration for pie chart calculation
         let interval = null;
         let isRunning = false;
         let isBreak = false;
@@ -465,6 +466,13 @@
         const clearHistoryBtn = document.getElementById('clearHistoryBtn');
         const notificationBanner = document.getElementById('notificationBanner');
 
+        // Favicon elements
+        const faviconLink = document.querySelector('link[rel="icon"]');
+        const faviconCanvas = document.createElement('canvas');
+        faviconCanvas.width = 32;
+        faviconCanvas.height = 32;
+        const faviconCtx = faviconCanvas.getContext('2d');
+
         // Initialize
         function init() {
             loadHistory();
@@ -474,6 +482,7 @@
             renderHistory();
             requestNotificationPermission();
             checkNotificationStatus();
+            updateFavicon();
         }
 
         // Notification permission
@@ -504,6 +513,63 @@
             return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         }
 
+        // Update favicon with pie chart
+        function updateFavicon() {
+            const ctx = faviconCtx;
+            const size = 32;
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const radius = size / 2 - 2;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, size, size);
+
+            // Calculate progress (0 to 1)
+            const progress = initialDuration > 0 ? timeRemaining / initialDuration : 0;
+
+            // Choose colors based on current phase
+            let fillColor = '#667eea'; // Default purple for work
+            if (isLongBreak) {
+                fillColor = '#60a5fa'; // Blue for long break
+            } else if (isBreak) {
+                fillColor = '#34d399'; // Green for short break
+            }
+
+            // Draw background circle (empty portion)
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#4b5563'; // Gray background
+            ctx.fill();
+
+            // Draw pie chart (filled portion representing remaining time)
+            if (progress > 0) {
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                // Start from top (-90 degrees = -PI/2 radians)
+                // Draw arc clockwise for the remaining time
+                const startAngle = -Math.PI / 2;
+                const endAngle = startAngle + (progress * Math.PI * 2);
+                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = fillColor;
+                ctx.fill();
+            }
+
+            // Draw border
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Update favicon
+            faviconLink.href = faviconCanvas.toDataURL('image/png');
+        }
+
+        function resetFavicon() {
+            faviconLink.href = '/favicon.svg';
+        }
+
         // Update display
         function updateDisplay() {
             display.textContent = formatTime(timeRemaining);
@@ -511,6 +577,11 @@
             // Update page title
             const statusText = isBreak ? (isLongBreak ? 'Long Break' : 'Break') : 'Work';
             document.title = `${formatTime(timeRemaining)} - ${statusText} | Pomodoro`;
+
+            // Update favicon
+            if (isRunning || timeRemaining > 0) {
+                updateFavicon();
+            }
         }
 
         // Update status text
@@ -586,11 +657,13 @@
             isLongBreak = false;
             completedInCycle = 0;
             timeRemaining = WORK_DURATION;
+            initialDuration = WORK_DURATION;
             updateDisplay();
             updateStatus();
             updateDots();
             descriptionInput.disabled = false;
             display.classList.remove('finished');
+            resetFavicon();
             document.title = 'Pomodoro Timer';
         }
 
@@ -639,6 +712,7 @@
                 isBreak = false;
                 isLongBreak = false;
                 timeRemaining = WORK_DURATION;
+                initialDuration = WORK_DURATION;
                 descriptionInput.disabled = false;
                 descriptionInput.value = '';
             } else {
@@ -649,12 +723,14 @@
                     // Long break
                     isLongBreak = true;
                     timeRemaining = LONG_BREAK;
+                    initialDuration = LONG_BREAK;
                     completedInCycle = 0;
                     updateDots();
                 } else {
                     // Short break
                     isLongBreak = false;
                     timeRemaining = SHORT_BREAK;
+                    initialDuration = SHORT_BREAK;
                 }
                 descriptionInput.disabled = true;
             }
