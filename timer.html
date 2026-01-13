@@ -243,6 +243,7 @@
 
     <script>
         let totalSeconds = 0;
+        let initialSeconds = 0; // Track initial duration for pie chart calculation
         let interval = null;
         let isRunning = false;
 
@@ -271,42 +272,45 @@
                 .join(':');
         }
 
-        function formatFaviconTime(totalSeconds) {
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const secs = totalSeconds % 60;
-
-            if (hours > 0) {
-                return `${hours}:${minutes.toString().padStart(2, '0')}`;
-            }
-            return `${minutes}:${secs.toString().padStart(2, '0')}`;
-        }
-
         function updateFavicon() {
             const ctx = faviconCtx;
             const size = 32;
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const radius = size / 2 - 2;
 
             // Clear canvas
             ctx.clearRect(0, 0, size, size);
 
-            // Draw background circle
+            // Calculate progress (0 to 1)
+            const progress = initialSeconds > 0 ? totalSeconds / initialSeconds : 0;
+
+            // Draw background circle (empty portion)
             ctx.beginPath();
-            ctx.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2);
-            ctx.fillStyle = '#667eea';
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#4b5563'; // Gray background
             ctx.fill();
 
-            // Draw time text
-            ctx.fillStyle = 'white';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-
-            const timeText = formatFaviconTime(totalSeconds);
-            if (timeText.length <= 4) {
-                ctx.font = 'bold 11px sans-serif';
-            } else {
-                ctx.font = 'bold 9px sans-serif';
+            // Draw pie chart (filled portion representing remaining time)
+            if (progress > 0) {
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                // Start from top (-90 degrees = -PI/2 radians)
+                // Draw arc clockwise for the remaining time
+                const startAngle = -Math.PI / 2;
+                const endAngle = startAngle + (progress * Math.PI * 2);
+                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = '#667eea'; // Purple fill for remaining time
+                ctx.fill();
             }
-            ctx.fillText(timeText, size / 2, size / 2 + 1);
+
+            // Draw border
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+            ctx.stroke();
 
             // Update favicon
             faviconLink.href = faviconCanvas.toDataURL('image/png');
@@ -356,6 +360,8 @@
                     alert('Please set a time greater than 0');
                     return;
                 }
+                // Store initial duration for pie chart calculation
+                initialSeconds = totalSeconds;
             }
 
             isRunning = true;
@@ -387,6 +393,7 @@
         function reset() {
             pause();
             totalSeconds = getInputTime();
+            initialSeconds = totalSeconds; // Update initial duration for pie chart
             updateDisplay();
             toggleInputs(true);
             display.classList.remove('finished');
@@ -397,6 +404,7 @@
                 minutesInput.value = 5;
                 secondsInput.value = 0;
                 totalSeconds = 300;
+                initialSeconds = 300;
                 updateDisplay();
             }
             updateFavicon();
@@ -462,6 +470,7 @@
             input.addEventListener('input', () => {
                 if (!isRunning) {
                     totalSeconds = getInputTime();
+                    initialSeconds = totalSeconds;
                     updateDisplay();
                 }
             });
@@ -469,6 +478,7 @@
 
         // Initialize display
         totalSeconds = getInputTime();
+        initialSeconds = totalSeconds;
         updateDisplay();
         updateFavicon();
     </script>
