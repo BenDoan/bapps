@@ -541,10 +541,10 @@
                 ctx.beginPath();
                 ctx.moveTo(centerX, centerY);
                 // Start from top (-90 degrees = -PI/2 radians)
-                // Draw arc clockwise for the remaining time
+                // Draw arc counterclockwise for the remaining time (so depletion appears clockwise)
                 const startAngle = -Math.PI / 2;
-                const endAngle = startAngle + (progress * Math.PI * 2);
-                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                const endAngle = startAngle - (progress * Math.PI * 2);
+                ctx.arc(centerX, centerY, radius, startAngle, endAngle, true);
                 ctx.closePath();
                 ctx.fillStyle = '#8b5cf6'; // Purple fill for remaining time
                 ctx.fill();
