@@ -476,22 +476,13 @@
         // Initialize
         function init() {
             loadHistory();
-
-            // Try to load saved timer state
-            const stateLoaded = loadTimerState();
-
-            // Only update display if no state was loaded
-            if (!stateLoaded) {
-                updateDisplay();
-                updateStatus();
-                updateFavicon();
-            }
-
+            updateDisplay();
             updateDots();
             updatePomodoroCount();
             renderHistory();
             requestNotificationPermission();
             checkNotificationStatus();
+            updateFavicon();
         }
 
         // Notification permission
@@ -624,13 +615,9 @@
             descriptionInput.disabled = true;
             display.classList.remove('finished');
 
-            // Save state when starting
-            saveTimerState();
-
             interval = setInterval(() => {
                 timeRemaining--;
                 updateDisplay();
-                saveTimerState(); // Save state every second while running
 
                 if (timeRemaining <= 0) {
                     finish();
@@ -647,9 +634,6 @@
             pauseBtn.disabled = true;
 
             clearInterval(interval);
-
-            // Save state when pausing
-            saveTimerState();
         }
 
         // Reset timer
@@ -664,13 +648,9 @@
             updateStatus();
             updateDots();
             descriptionInput.disabled = false;
-            descriptionInput.value = '';
             display.classList.remove('finished');
             resetFavicon();
             document.title = 'Pomodoro Timer';
-
-            // Clear saved state on reset
-            clearTimerState();
         }
 
         // Skip current session
@@ -743,9 +723,6 @@
 
             updateDisplay();
             updateStatus();
-
-            // Save state after transition
-            saveTimerState();
         }
 
         // Play alarm sound
@@ -858,78 +835,12 @@
             }).join('');
         }
 
-        // Timer state management
-        function saveTimerState() {
-            const state = {
-                timeRemaining,
-                initialDuration,
-                isRunning,
-                isBreak,
-                isLongBreak,
-                completedInCycle,
-                description: descriptionInput.value,
-                lastSaveTime: Date.now()
-            };
-            localStorage.setItem('pomodoroTimerState', JSON.stringify(state));
-        }
-
-        function loadTimerState() {
-            const stored = localStorage.getItem('pomodoroTimerState');
-            if (!stored) return false;
-
-            try {
-                const state = JSON.parse(stored);
-
-                // Calculate time elapsed since last save
-                const timeElapsed = Math.floor((Date.now() - state.lastSaveTime) / 1000);
-
-                // Restore state
-                timeRemaining = state.timeRemaining;
-                initialDuration = state.initialDuration;
-                isBreak = state.isBreak;
-                isLongBreak = state.isLongBreak;
-                completedInCycle = state.completedInCycle;
-                descriptionInput.value = state.description || '';
-
-                // If timer was running, account for elapsed time
-                if (state.isRunning && timeElapsed > 0) {
-                    timeRemaining = Math.max(0, timeRemaining - timeElapsed);
-
-                    // If time ran out while away, mark as finished
-                    if (timeRemaining === 0) {
-                        finish();
-                        return true;
-                    }
-
-                    // Resume the timer automatically
-                    isRunning = false; // Set to false so start() can run
-                    start();
-                }
-
-                // Update UI
-                updateDisplay();
-                updateStatus();
-                updateDots();
-                descriptionInput.disabled = isBreak;
-
-                return true;
-            } catch (e) {
-                console.error('Failed to load timer state:', e);
-                return false;
-            }
-        }
-
-        function clearTimerState() {
-            localStorage.removeItem('pomodoroTimerState');
-        }
-
         // Event listeners
         startBtn.addEventListener('click', start);
         pauseBtn.addEventListener('click', pause);
         skipBtn.addEventListener('click', skip);
         resetBtn.addEventListener('click', reset);
         clearHistoryBtn.addEventListener('click', clearHistory);
-        descriptionInput.addEventListener('input', saveTimerState);
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
