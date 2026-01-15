@@ -652,24 +652,32 @@
             if (labels && labels.length > 0) {
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
                 ctx.font = '9px -apple-system, BlinkMacSystemFont, sans-serif';
-                ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
 
                 const labelCount = Math.min(5, labels.length);
                 const step = labels.length <= labelCount ? 1 : Math.floor(labels.length / (labelCount - 1));
+                const lastLabelX = padding.left + chartWidth;
+                const minLabelSpacing = 70; // Minimum pixels between labels
 
                 for (let i = 0; i < labels.length; i += step) {
                     if (i >= labels.length) break;
                     const x = padding.left + (labels.length === 1 ? chartWidth / 2 : (i / (labels.length - 1)) * chartWidth);
+
+                    // Skip this label if it would overlap with the last label
+                    if (labels.length > 1 && (labels.length - 1) % step !== 0 && lastLabelX - x < minLabelSpacing) {
+                        continue;
+                    }
+
+                    ctx.textAlign = 'center';
                     const label = labels[i].split(' ')[0]; // Just show date part
                     ctx.fillText(label, x, height - padding.bottom + 5);
                 }
 
-                // Always show last label
+                // Always show last label (right-aligned to prevent overflow)
                 if (labels.length > 1 && (labels.length - 1) % step !== 0) {
-                    const x = padding.left + chartWidth;
+                    ctx.textAlign = 'end';
                     const label = labels[labels.length - 1].split(' ')[0];
-                    ctx.fillText(label, x, height - padding.bottom + 5);
+                    ctx.fillText(label, lastLabelX, height - padding.bottom + 5);
                 }
             }
         }
