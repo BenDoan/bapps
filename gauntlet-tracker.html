@@ -392,7 +392,8 @@
             floorTileHits: '#0ea5e9',
             damageTaken: '#dc2626',
             dpsTaken: '#a855f7',
-            dpsGiven: '#22c55e'
+            dpsGiven: '#22c55e',
+            fishNeeded: '#f472b6'
         };
 
         // Friendly names for metrics
@@ -410,7 +411,8 @@
             floorTileHits: 'Floor Tile Hits',
             damageTaken: 'Damage Taken',
             dpsTaken: 'DPS Taken',
-            dpsGiven: 'DPS Given'
+            dpsGiven: 'DPS Given',
+            fishNeeded: 'Fish Needed'
         };
 
         // DOM elements
@@ -456,11 +458,17 @@
                     const [year, month, day] = datePart.split('-').map(Number);
                     const [hour, minute] = timePart.split(':').map(Number);
 
+                    // Calculate fish needed if not already present
+                    const data = item.v;
+                    if (data.fishNeeded === undefined && data.damageTaken !== undefined) {
+                        data.fishNeeded = Math.ceil(parseValue(data.damageTaken) / 20);
+                    }
+
                     return {
                         username: 'shared',
                         date: new Date(year, month - 1, day, hour, minute),
                         dateStr: item.d,
-                        data: item.v
+                        data: data
                     };
                 });
 
@@ -517,6 +525,8 @@
                         );
 
                         if (!exists) {
+                            // Calculate fish needed from damage taken
+                            data.fishNeeded = Math.ceil(parseValue(data.damageTaken) / 20);
                             sessions.push({
                                 ...fileInfo,
                                 data
@@ -748,6 +758,7 @@
                 const progress = i / 11; // 0 to 1
                 const variance = () => (Math.random() - 0.5) * 0.3;
 
+                const damageTaken = Math.round(400 - progress * 150 + variance() * 50);
                 const data = {
                     totalTicks: Math.round(450 - progress * 80 + variance() * 30),
                     lostTicks: Math.round(60 - progress * 35 + variance() * 15),
@@ -760,9 +771,10 @@
                     hunleffStomps: Math.max(0, Math.round(3 - progress * 3 + variance() * 1)),
                     tornadoHits: Math.max(0, Math.round(4 - progress * 3 + variance() * 2)),
                     floorTileHits: Math.max(0, Math.round(10 - progress * 8 + variance() * 3)),
-                    damageTaken: Math.round(400 - progress * 150 + variance() * 50),
+                    damageTaken: damageTaken,
                     dpsTaken: parseFloat((1.8 - progress * 0.7 + variance() * 0.3).toFixed(4)),
-                    dpsGiven: parseFloat((3.5 + progress * 1.2 + variance() * 0.4).toFixed(4))
+                    dpsGiven: parseFloat((3.5 + progress * 1.2 + variance() * 0.4).toFixed(4)),
+                    fishNeeded: Math.ceil(damageTaken / 20)
                 };
 
                 const year = sessionDate.getFullYear();
