@@ -406,6 +406,7 @@
 
         // State
         let sessions = [];
+        let originalSessionCount = 0;
 
         // Chart colors for each metric
         const chartColors = {
@@ -510,6 +511,7 @@
                 });
 
                 sessions.sort((a, b) => a.date - b.date);
+                originalSessionCount = sessions.length; // When loaded from URL, we don't know original count
                 return true;
             } catch (e) {
                 console.error('Failed to load data from URL:', e);
@@ -538,6 +540,55 @@
                 return parseFloat(value.replace('%', ''));
             }
             return typeof value === 'number' ? value : parseFloat(value) || 0;
+        }
+
+        // Downsample sessions to a maximum number of points by averaging nearby points
+        const MAX_DATA_POINTS = 20;
+
+        function downsampleSessions(allSessions, maxPoints = MAX_DATA_POINTS) {
+            if (allSessions.length <= maxPoints) {
+                return allSessions;
+            }
+
+            const downsampled = [];
+            const bucketSize = allSessions.length / maxPoints;
+
+            for (let i = 0; i < maxPoints; i++) {
+                const startIdx = Math.floor(i * bucketSize);
+                const endIdx = Math.floor((i + 1) * bucketSize);
+                const bucketSessions = allSessions.slice(startIdx, endIdx);
+
+                if (bucketSessions.length === 0) continue;
+
+                // Average all numeric values in the bucket
+                const metrics = Object.keys(bucketSessions[0].data);
+                const avgData = {};
+
+                metrics.forEach(metric => {
+                    const values = bucketSessions.map(s => parseValue(s.data[metric]));
+                    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+
+                    // Check if original was a percentage
+                    if (typeof bucketSessions[0].data[metric] === 'string' &&
+                        bucketSessions[0].data[metric].endsWith('%')) {
+                        avgData[metric] = avg.toFixed(2) + '%';
+                    } else {
+                        avgData[metric] = avg;
+                    }
+                });
+
+                // Use the middle session's date for the bucket
+                const middleSession = bucketSessions[Math.floor(bucketSessions.length / 2)];
+
+                downsampled.push({
+                    username: 'averaged',
+                    date: middleSession.date,
+                    dateStr: middleSession.dateStr,
+                    data: avgData
+                });
+            }
+
+            return downsampled;
         }
 
         // Load files (replaces existing data)
@@ -577,6 +628,12 @@
 
             // Sort sessions by date
             sessions.sort((a, b) => a.date - b.date);
+
+            // Track original count before downsampling
+            originalSessionCount = sessions.length;
+
+            // Downsample to maximum data points if needed
+            sessions = downsampleSessions(sessions);
 
             saveToUrl();
             updateUI();
@@ -764,7 +821,13 @@
 
             emptyState.style.display = 'none';
             chartsContainer.style.display = 'block';
-            fileCount.textContent = `${sessions.length} session${sessions.length !== 1 ? 's' : ''} loaded`;
+
+            // Show count with averaging info
+            if (originalSessionCount > sessions.length) {
+                fileCount.textContent = `${originalSessionCount} session${originalSessionCount !== 1 ? 's' : ''} loaded (averaged to ${sessions.length} data points)`;
+            } else {
+                fileCount.textContent = `${sessions.length} session${sessions.length !== 1 ? 's' : ''} loaded`;
+            }
 
             // Get all metrics from first session
             const metrics = Object.keys(sessions[0].data);
@@ -818,6 +881,7 @@
         // Reset
         function reset() {
             sessions = [];
+            originalSessionCount = 0;
             saveToUrl();
             updateUI();
         }
@@ -871,7 +935,8 @@
                 });
             }
 
-            sessions = demoSessions;
+            originalSessionCount = demoSessions.length;
+            sessions = downsampleSessions(demoSessions);
             saveToUrl();
             updateUI();
         }
