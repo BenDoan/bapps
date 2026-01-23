@@ -821,13 +821,7 @@
 
             emptyState.style.display = 'none';
             chartsContainer.style.display = 'block';
-
-            // Show count with averaging info
-            if (originalSessionCount > sessions.length) {
-                fileCount.textContent = `${originalSessionCount} session${originalSessionCount !== 1 ? 's' : ''} loaded (averaged to ${sessions.length} data points)`;
-            } else {
-                fileCount.textContent = `${sessions.length} session${sessions.length !== 1 ? 's' : ''} loaded`;
-            }
+            fileCount.textContent = `${originalSessionCount} session${originalSessionCount !== 1 ? 's' : ''} loaded`;
 
             // Get all metrics from first session
             const metrics = Object.keys(sessions[0].data);
