@@ -133,6 +133,17 @@
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
         }
 
+        .btn-share {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .btn-share:hover {
+            background: #7c3aed;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+        }
+
         .modal-overlay {
             display: none;
             position: fixed;
@@ -323,6 +334,7 @@
             <button class="btn btn-info" id="instructionsBtn">Instructions</button>
             <button class="btn btn-upload" id="uploadBtn">Upload Files</button>
             <button class="btn btn-demo" id="demoBtn">Demo</button>
+            <button class="btn btn-share" id="shareBtn">Share</button>
             <button class="btn btn-reset" id="resetBtn">Reset</button>
         </div>
     </header>
@@ -347,6 +359,24 @@
                     <code>$HOME/.runelite/gauntletPerformanceTracker</code>
                 </li>
             </ol>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="shareModalOverlay">
+        <div class="modal">
+            <button class="modal-close" id="shareModalClose">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <h2>Share Your Progress</h2>
+            <p style="margin-bottom: 1rem; color: rgba(255, 255, 255, 0.7);">Copy the link below to share your gauntlet performance data:</p>
+            <div style="display: flex; gap: 0.5rem; align-items: stretch;">
+                <input type="text" id="shareUrlInput" readonly style="flex: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(0, 0, 0, 0.3); color: white; font-size: 0.85rem;">
+                <button class="btn btn-upload" id="copyShareBtn" style="white-space: nowrap;">Copy</button>
+            </div>
+            <p id="shareEmptyMessage" style="margin-top: 1rem; color: #f59e0b; display: none;">No data to share. Upload some files first!</p>
+            <p id="shareCopiedMessage" style="margin-top: 1rem; color: #10b981; display: none;">Link copied to clipboard!</p>
         </div>
     </div>
 
@@ -421,8 +451,15 @@
         const demoBtn = document.getElementById('demoBtn');
         const resetBtn = document.getElementById('resetBtn');
         const instructionsBtn = document.getElementById('instructionsBtn');
+        const shareBtn = document.getElementById('shareBtn');
         const modalOverlay = document.getElementById('modalOverlay');
         const modalClose = document.getElementById('modalClose');
+        const shareModalOverlay = document.getElementById('shareModalOverlay');
+        const shareModalClose = document.getElementById('shareModalClose');
+        const shareUrlInput = document.getElementById('shareUrlInput');
+        const copyShareBtn = document.getElementById('copyShareBtn');
+        const shareEmptyMessage = document.getElementById('shareEmptyMessage');
+        const shareCopiedMessage = document.getElementById('shareCopiedMessage');
         const emptyState = document.getElementById('emptyState');
         const chartsContainer = document.getElementById('chartsContainer');
         const chartsGrid = document.getElementById('chartsGrid');
@@ -866,6 +903,49 @@
         modalOverlay.addEventListener('click', (e) => {
             if (e.target === modalOverlay) {
                 modalOverlay.classList.remove('active');
+            }
+        });
+
+        shareBtn.addEventListener('click', () => {
+            shareEmptyMessage.style.display = 'none';
+            shareCopiedMessage.style.display = 'none';
+
+            if (sessions.length === 0) {
+                shareUrlInput.value = '';
+                shareEmptyMessage.style.display = 'block';
+            } else {
+                shareUrlInput.value = window.location.href;
+            }
+            shareModalOverlay.classList.add('active');
+        });
+
+        shareModalClose.addEventListener('click', () => {
+            shareModalOverlay.classList.remove('active');
+        });
+
+        shareModalOverlay.addEventListener('click', (e) => {
+            if (e.target === shareModalOverlay) {
+                shareModalOverlay.classList.remove('active');
+            }
+        });
+
+        copyShareBtn.addEventListener('click', async () => {
+            if (sessions.length === 0) return;
+
+            try {
+                await navigator.clipboard.writeText(shareUrlInput.value);
+                shareCopiedMessage.style.display = 'block';
+                setTimeout(() => {
+                    shareCopiedMessage.style.display = 'none';
+                }, 2000);
+            } catch (err) {
+                // Fallback for older browsers
+                shareUrlInput.select();
+                document.execCommand('copy');
+                shareCopiedMessage.style.display = 'block';
+                setTimeout(() => {
+                    shareCopiedMessage.style.display = 'none';
+                }, 2000);
             }
         });
 
