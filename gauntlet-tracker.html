@@ -680,6 +680,41 @@
                     ctx.fillText(label, lastLabelX, height - padding.bottom + 5);
                 }
             }
+
+            // Draw linear trend line
+            if (values.length >= 2) {
+                // Calculate linear regression using least squares
+                const n = values.length;
+                let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+                for (let i = 0; i < n; i++) {
+                    sumX += i;
+                    sumY += values[i];
+                    sumXY += i * values[i];
+                    sumX2 += i * i;
+                }
+                const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+                const intercept = (sumY - slope * sumX) / n;
+
+                // Calculate trend line start and end points
+                const trendStart = intercept;
+                const trendEnd = slope * (n - 1) + intercept;
+
+                // Convert to canvas coordinates
+                const startX = padding.left;
+                const startY = padding.top + chartHeight - ((trendStart - yMin) / yRange) * chartHeight;
+                const endX = padding.left + chartWidth;
+                const endY = padding.top + chartHeight - ((trendEnd - yMin) / yRange) * chartHeight;
+
+                // Draw dashed trend line
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 4]);
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+                ctx.setLineDash([]); // Reset to solid line
+            }
         }
 
         // Update UI
