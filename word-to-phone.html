@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word to Phone Converter</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: white;
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group label {
+            display: block;
+            color: white;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            opacity: 0.9;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.5rem;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: none;
+        }
+
+        .result-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .result-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+        }
+
+        .result {
+            font-size: clamp(2rem, 10vw, 3.5rem);
+            font-weight: 300;
+            color: white;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.15em;
+            word-break: break-all;
+            min-height: 3.5rem;
+        }
+
+        .copy-btn {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+            background-color: #10b981;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .copy-btn:hover:not(:disabled) {
+            background-color: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .copy-btn:active {
+            transform: translateY(0);
+        }
+
+        .copy-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .copy-btn.copied {
+            background-color: #6b7280;
+        }
+
+        .keypad-reference {
+            margin-top: 2rem;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .key {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.5rem;
+            color: white;
+        }
+
+        .key-number {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .key-letters {
+            font-size: 0.65rem;
+            opacity: 0.8;
+            letter-spacing: 0.1em;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-2px);
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .keypad-reference {
+                max-width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-btn" title="Back to apps">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+    </a>
+    <div class="container">
+        <h1>Word to Phone Converter</h1>
+        <p class="subtitle">Convert words to phone keypad numbers</p>
+
+        <div class="input-group">
+            <label for="wordInput">Enter Word</label>
+            <input type="text" id="wordInput" placeholder="e.g., HELLO" autocomplete="off">
+        </div>
+
+        <div class="result-section">
+            <div class="result-label">Phone Number</div>
+            <div class="result" id="result">-</div>
+        </div>
+
+        <button class="copy-btn" id="copyBtn" disabled>Copy</button>
+
+        <div class="keypad-reference">
+            <div class="key">
+                <div class="key-number">2</div>
+                <div class="key-letters">ABC</div>
+            </div>
+            <div class="key">
+                <div class="key-number">3</div>
+                <div class="key-letters">DEF</div>
+            </div>
+            <div class="key">
+                <div class="key-number">4</div>
+                <div class="key-letters">GHI</div>
+            </div>
+            <div class="key">
+                <div class="key-number">5</div>
+                <div class="key-letters">JKL</div>
+            </div>
+            <div class="key">
+                <div class="key-number">6</div>
+                <div class="key-letters">MNO</div>
+            </div>
+            <div class="key">
+                <div class="key-number">7</div>
+                <div class="key-letters">PQRS</div>
+            </div>
+            <div class="key">
+                <div class="key-number">8</div>
+                <div class="key-letters">TUV</div>
+            </div>
+            <div class="key">
+                <div class="key-number">9</div>
+                <div class="key-letters">WXYZ</div>
+            </div>
+            <div class="key">
+                <div class="key-number">0</div>
+                <div class="key-letters">SPACE</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Phone keypad mapping
+        const letterToNumber = {
+            'A': '2', 'B': '2', 'C': '2',
+            'D': '3', 'E': '3', 'F': '3',
+            'G': '4', 'H': '4', 'I': '4',
+            'J': '5', 'K': '5', 'L': '5',
+            'M': '6', 'N': '6', 'O': '6',
+            'P': '7', 'Q': '7', 'R': '7', 'S': '7',
+            'T': '8', 'U': '8', 'V': '8',
+            'W': '9', 'X': '9', 'Y': '9', 'Z': '9',
+            ' ': '0'
+        };
+
+        const wordInput = document.getElementById('wordInput');
+        const result = document.getElementById('result');
+        const copyBtn = document.getElementById('copyBtn');
+
+        let currentPhoneNumber = '';
+
+        function convertToPhone(word) {
+            if (!word) return '';
+
+            return word
+                .toUpperCase()
+                .split('')
+                .map(char => letterToNumber[char] || '')
+                .join('');
+        }
+
+        function updateResult() {
+            const word = wordInput.value;
+            currentPhoneNumber = convertToPhone(word);
+
+            if (currentPhoneNumber) {
+                result.textContent = currentPhoneNumber;
+                copyBtn.disabled = false;
+            } else {
+                result.textContent = '-';
+                copyBtn.disabled = true;
+            }
+
+            // Reset copy button state
+            copyBtn.textContent = 'Copy';
+            copyBtn.classList.remove('copied');
+        }
+
+        async function copyToClipboard() {
+            if (!currentPhoneNumber) return;
+
+            try {
+                await navigator.clipboard.writeText(currentPhoneNumber);
+                copyBtn.textContent = 'Copied!';
+                copyBtn.classList.add('copied');
+
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copy';
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = currentPhoneNumber;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+
+                copyBtn.textContent = 'Copied!';
+                copyBtn.classList.add('copied');
+
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copy';
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            }
+        }
+
+        // Event listeners
+        wordInput.addEventListener('input', updateResult);
+        copyBtn.addEventListener('click', copyToClipboard);
+
+        // Focus input on load
+        wordInput.focus();
+    </script>
+</body>
+</html>
