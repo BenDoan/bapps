@@ -144,6 +144,25 @@
             box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
         }
 
+        .btn-filter {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-filter:hover {
+            background: #4b5563;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+        }
+
+        .btn-filter.active {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .btn-filter.active:hover {
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+
         .modal-overlay {
             display: none;
             position: fixed;
@@ -334,6 +353,7 @@
             <button class="btn btn-info" id="instructionsBtn">Help</button>
             <button class="btn btn-upload" id="uploadBtn">Upload</button>
             <button class="btn btn-demo" id="demoBtn">Demo</button>
+            <button class="btn btn-filter" id="last20Btn">Last 20</button>
             <button class="btn btn-share" id="shareBtn">Share</button>
             <button class="btn btn-reset" id="resetBtn">Reset</button>
         </div>
@@ -406,6 +426,7 @@
 
         // State
         let sessions = [];
+        let filterLast20 = false;
 
         // Chart colors for each metric
         const chartColors = {
@@ -451,6 +472,7 @@
         const demoBtn = document.getElementById('demoBtn');
         const resetBtn = document.getElementById('resetBtn');
         const instructionsBtn = document.getElementById('instructionsBtn');
+        const last20Btn = document.getElementById('last20Btn');
         const shareBtn = document.getElementById('shareBtn');
         const modalOverlay = document.getElementById('modalOverlay');
         const modalClose = document.getElementById('modalClose');
@@ -764,17 +786,22 @@
 
             emptyState.style.display = 'none';
             chartsContainer.style.display = 'block';
-            fileCount.textContent = `${sessions.length} session${sessions.length !== 1 ? 's' : ''} loaded`;
+
+            const displaySessions = filterLast20 ? sessions.slice(-20) : sessions;
+            const filterNote = filterLast20 && sessions.length > 20
+                ? ` (showing last 20 of ${sessions.length})`
+                : '';
+            fileCount.textContent = `${displaySessions.length} session${displaySessions.length !== 1 ? 's' : ''} loaded${filterNote}`;
 
             // Get all metrics from first session
-            const metrics = Object.keys(sessions[0].data);
+            const metrics = Object.keys(displaySessions[0].data);
 
             // Clear and rebuild charts
             chartsGrid.innerHTML = '';
 
             metrics.forEach(metric => {
-                const values = sessions.map(s => parseValue(s.data[metric]));
-                const labels = sessions.map(s => s.dateStr);
+                const values = displaySessions.map(s => parseValue(s.data[metric]));
+                const labels = displaySessions.map(s => s.dateStr);
                 const color = chartColors[metric] || '#667eea';
                 const name = metricNames[metric] || metric;
 
@@ -886,6 +913,12 @@
                 loadFiles(Array.from(e.target.files));
                 fileInput.value = ''; // Reset so same files can be selected again
             }
+        });
+
+        last20Btn.addEventListener('click', () => {
+            filterLast20 = !filterLast20;
+            last20Btn.classList.toggle('active', filterLast20);
+            updateUI();
         });
 
         resetBtn.addEventListener('click', reset);
