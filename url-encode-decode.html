@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Encode/Decode</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 0.75rem;
+            font-size: 0.95rem;
+            font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        textarea:focus {
+            border-color: #667eea;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+            letter-spacing: 0.02em;
+        }
+
+        .encode-btn {
+            background-color: #667eea;
+        }
+
+        .encode-btn:hover {
+            background-color: #5a6fd6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .decode-btn {
+            background-color: #764ba2;
+        }
+
+        .decode-btn:hover {
+            background-color: #6a3f96;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(118, 75, 162, 0.4);
+        }
+
+        .swap-btn {
+            background-color: #6b7280;
+        }
+
+        .swap-btn:hover {
+            background-color: #4b5563;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+        }
+
+        .copy-btn {
+            background-color: #10b981;
+        }
+
+        .copy-btn:hover {
+            background-color: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .error {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            min-height: 1.2em;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-2px);
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        @media (max-width: 480px) {
+            .buttons {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-btn" title="Back to apps">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+    </a>
+    <div class="container">
+        <h1>URL Encode / Decode</h1>
+
+        <div class="panel">
+            <label for="input">Input</label>
+            <textarea id="input" placeholder="Enter text to encode or decode..."></textarea>
+        </div>
+
+        <div class="buttons">
+            <button class="encode-btn" id="encodeBtn">Encode</button>
+            <button class="decode-btn" id="decodeBtn">Decode</button>
+            <button class="swap-btn" id="swapBtn">Swap</button>
+        </div>
+
+        <div class="panel" style="margin-top: 1rem;">
+            <label for="output">Output</label>
+            <textarea id="output" readonly placeholder="Result will appear here..."></textarea>
+            <div class="error" id="error"></div>
+        </div>
+
+        <div class="buttons">
+            <button class="copy-btn" id="copyBtn">Copy Output</button>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('input');
+        const output = document.getElementById('output');
+        const error = document.getElementById('error');
+        const encodeBtn = document.getElementById('encodeBtn');
+        const decodeBtn = document.getElementById('decodeBtn');
+        const swapBtn = document.getElementById('swapBtn');
+        const copyBtn = document.getElementById('copyBtn');
+
+        function clearError() {
+            error.textContent = '';
+        }
+
+        encodeBtn.addEventListener('click', () => {
+            clearError();
+            output.value = encodeURIComponent(input.value);
+        });
+
+        decodeBtn.addEventListener('click', () => {
+            clearError();
+            try {
+                output.value = decodeURIComponent(input.value);
+            } catch (e) {
+                output.value = '';
+                error.textContent = 'Invalid encoded string: ' + e.message;
+            }
+        });
+
+        swapBtn.addEventListener('click', () => {
+            clearError();
+            const temp = input.value;
+            input.value = output.value;
+            output.value = temp;
+        });
+
+        copyBtn.addEventListener('click', () => {
+            if (!output.value) return;
+            navigator.clipboard.writeText(output.value).then(() => {
+                const original = copyBtn.textContent;
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => { copyBtn.textContent = original; }, 1500);
+            });
+        });
+    </script>
+</body>
+</html>
