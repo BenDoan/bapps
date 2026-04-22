@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cron Expression Parser</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.85);
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            font-size: 1.1rem;
+            font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: #667eea;
+        }
+
+        .examples {
+            margin-top: 0.75rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .example-chip {
+            background: #eef2ff;
+            color: #4338ca;
+            border: 1px solid #c7d2fe;
+            border-radius: 999px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.8rem;
+            font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .example-chip:hover {
+            background: #e0e7ff;
+            transform: translateY(-1px);
+        }
+
+        .description {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .next-runs {
+            list-style: none;
+        }
+
+        .next-runs li {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            padding: 0.65rem 0;
+            border-bottom: 1px solid #f3f4f6;
+            gap: 1rem;
+        }
+
+        .next-runs li:last-child {
+            border-bottom: none;
+        }
+
+        .run-index {
+            color: #9ca3af;
+            font-size: 0.8rem;
+            font-weight: 600;
+            width: 2rem;
+            flex-shrink: 0;
+        }
+
+        .run-date {
+            color: #111827;
+            font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.95rem;
+            flex: 1;
+        }
+
+        .run-relative {
+            color: #6b7280;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+            text-align: right;
+        }
+
+        .section-title {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.75rem;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: #667eea;
+            border-radius: 2px;
+        }
+
+        .field-legend {
+            font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+            line-height: 1.6;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-2px);
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        @media (max-width: 480px) {
+            .next-runs li {
+                flex-wrap: wrap;
+            }
+
+            .run-relative {
+                width: 100%;
+                text-align: left;
+                padding-left: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-btn" title="Back to apps">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+    </a>
+
+    <div class="container">
+        <h1>Cron Expression Parser</h1>
+        <p class="subtitle">Describe a cron expression and preview its next runs</p>
+
+        <div class="panel">
+            <label for="cronInput">Cron expression</label>
+            <input
+                type="text"
+                id="cronInput"
+                value="*/15 * * * *"
+                placeholder="e.g. 0 9 * * 1-5"
+                autocomplete="off"
+                spellcheck="false"
+            >
+            <div class="field-legend">
+                <div>minute (0-59) &nbsp;hour (0-23) &nbsp;day-of-month (1-31) &nbsp;month (1-12) &nbsp;day-of-week (0-7, 0/7 = Sun)</div>
+                <div>Supports <code>*</code>, <code>,</code>, <code>-</code>, <code>/</code>, names (JAN-DEC, SUN-SAT), and <code>@yearly/@monthly/@weekly/@daily/@hourly</code></div>
+            </div>
+            <div class="examples" id="examples"></div>
+        </div>
+
+        <div class="panel">
+            <div class="section-title">Description</div>
+            <div id="descriptionBox"></div>
+        </div>
+
+        <div class="panel">
+            <div class="section-title">Next 10 runs <span id="tzLabel" style="font-weight:400;color:#6b7280;font-size:0.85rem;"></span></div>
+            <ul class="next-runs" id="nextRuns"></ul>
+        </div>
+    </div>
+
+    <script>
+        const MONTH_NAMES = {jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12};
+        const DOW_NAMES = {sun:0, mon:1, tue:2, wed:3, thu:4, fri:5, sat:6};
+        const MONTH_LABELS = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const DOW_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        const SHORTCUTS = {
+            '@yearly':   '0 0 1 1 *',
+            '@annually': '0 0 1 1 *',
+            '@monthly':  '0 0 1 * *',
+            '@weekly':   '0 0 * * 0',
+            '@daily':    '0 0 * * *',
+            '@midnight': '0 0 * * *',
+            '@hourly':   '0 * * * *'
+        };
+
+        const EXAMPLES = [
+            '*/15 * * * *',
+            '0 9 * * 1-5',
+            '0 0 1 * *',
+            '30 2 * * 6,0',
+            '0 */4 * * *',
+            '15 10 1,15 * *',
+            '@daily',
+            '0 12 * JAN-MAR MON'
+        ];
+
+        function parseValue(s, names) {
+            const lower = s.toLowerCase();
+            if (lower in names) return names[lower];
+            if (!/^-?\d+$/.test(s)) throw new Error(`Invalid value "${s}"`);
+            return parseInt(s, 10);
+        }
+
+        function parseField(expr, min, max, names = {}, fieldName = 'field') {
+            if (expr === undefined || expr === '') throw new Error(`Missing ${fieldName}`);
+            const values = new Set();
+            const restricted = expr !== '*' && expr !== '*/1';
+
+            for (const part of expr.split(',')) {
+                let step = 1;
+                let rangeStr = part;
+                if (part.includes('/')) {
+                    const slashIdx = part.indexOf('/');
+                    rangeStr = part.slice(0, slashIdx);
+                    const stepStr = part.slice(slashIdx + 1);
+                    step = parseInt(stepStr, 10);
+                    if (isNaN(step) || step <= 0) throw new Error(`Invalid step "${stepStr}" in ${fieldName}`);
+                }
+
+                let rMin, rMax;
+                if (rangeStr === '*' || rangeStr === '') {
+                    rMin = min;
+                    rMax = max;
+                } else if (rangeStr.includes('-')) {
+                    const [a, b] = rangeStr.split('-');
+                    rMin = parseValue(a, names);
+                    rMax = parseValue(b, names);
+                } else {
+                    rMin = parseValue(rangeStr, names);
+                    rMax = (step > 1 && part.includes('/')) ? max : rMin;
+                }
+
+                if (rMin < min || rMax > max || rMin > rMax) {
+                    throw new Error(`${fieldName}: "${part}" out of range [${min}-${max}]`);
+                }
+                for (let v = rMin; v <= rMax; v += step) values.add(v);
+            }
+
+            return { values, restricted };
+        }
+
+        function parseCron(input) {
+            let expr = input.trim().toLowerCase();
+            if (!expr) throw new Error('Empty expression');
+            if (SHORTCUTS[expr]) expr = SHORTCUTS[expr];
+
+            const fields = expr.split(/\s+/);
+            if (fields.length !== 5) {
+                throw new Error(`Expected 5 fields (minute hour day-of-month month day-of-week), got ${fields.length}`);
+            }
+            const [mStr, hStr, domStr, monStr, dowStr] = fields;
+
+            const minute = parseField(mStr, 0, 59, {}, 'minute');
+            const hour = parseField(hStr, 0, 23, {}, 'hour');
+            const dom = parseField(domStr, 1, 31, {}, 'day-of-month');
+            const month = parseField(monStr, 1, 12, MONTH_NAMES, 'month');
+            const dow = parseField(dowStr, 0, 7, DOW_NAMES, 'day-of-week');
+
+            // Normalize: 7 means Sunday, same as 0.
+            if (dow.values.has(7)) {
+                dow.values.delete(7);
+                dow.values.add(0);
+            }
+
+            return { minute, hour, dom, month, dow, raw: { mStr, hStr, domStr, monStr, dowStr } };
+        }
+
+        function matches(date, cron) {
+            if (!cron.minute.values.has(date.getMinutes())) return false;
+            if (!cron.hour.values.has(date.getHours())) return false;
+            if (!cron.month.values.has(date.getMonth() + 1)) return false;
+
+            const domOk = cron.dom.values.has(date.getDate());
+            const dowOk = cron.dow.values.has(date.getDay());
+            if (cron.dom.restricted && cron.dow.restricted) {
+                return domOk || dowOk;
+            }
+            return domOk && dowOk;
+        }
+
+        function nextRuns(cron, count, from = new Date()) {
+            const results = [];
+            const d = new Date(from);
+            d.setSeconds(0, 0);
+            d.setMinutes(d.getMinutes() + 1);
+
+            let safety = 600000;
+            while (results.length < count && safety-- > 0) {
+                if (!cron.month.values.has(d.getMonth() + 1)) {
+                    d.setMonth(d.getMonth() + 1, 1);
+                    d.setHours(0, 0, 0, 0);
+                    continue;
+                }
+                const domOk = cron.dom.values.has(d.getDate());
+                const dowOk = cron.dow.values.has(d.getDay());
+                const dayOk = (cron.dom.restricted && cron.dow.restricted) ? (domOk || dowOk) : (domOk && dowOk);
+                if (!dayOk) {
+                    d.setDate(d.getDate() + 1);
+                    d.setHours(0, 0, 0, 0);
+                    continue;
+                }
+                if (!cron.hour.values.has(d.getHours())) {
+                    d.setHours(d.getHours() + 1, 0, 0, 0);
+                    continue;
+                }
+                if (!cron.minute.values.has(d.getMinutes())) {
+                    d.setMinutes(d.getMinutes() + 1, 0, 0);
+                    continue;
+                }
+                results.push(new Date(d));
+                d.setMinutes(d.getMinutes() + 1);
+            }
+            return results;
+        }
+
+        function pad(n) { return String(n).padStart(2, '0'); }
+
+        function toRanges(sortedValues) {
+            const ranges = [];
+            let start = sortedValues[0];
+            let prev = start;
+            for (let i = 1; i < sortedValues.length; i++) {
+                const v = sortedValues[i];
+                if (v === prev + 1) {
+                    prev = v;
+                } else {
+                    ranges.push([start, prev]);
+                    start = v;
+                    prev = v;
+                }
+            }
+            ranges.push([start, prev]);
+            return ranges;
+        }
+
+        function detectStep(values, min, max) {
+            if (values.length < 2) return null;
+            const step = values[1] - values[0];
+            if (step <= 1) return null;
+            for (let i = 1; i < values.length; i++) {
+                if (values[i] - values[i - 1] !== step) return null;
+            }
+            if (values[0] !== min) return null;
+            if (values[values.length - 1] + step > max) return { step, from: values[0] };
+            return null;
+        }
+
+        function describeTime(cron) {
+            const minutes = [...cron.minute.values].sort((a, b) => a - b);
+            const hours = [...cron.hour.values].sort((a, b) => a - b);
+            const everyMinute = !cron.minute.restricted;
+            const everyHour = !cron.hour.restricted;
+
+            if (everyMinute && everyHour) return 'Every minute';
+
+            if (!everyMinute && everyHour) {
+                const step = detectStep(minutes, 0, 59);
+                if (step) return `Every ${step.step} minutes`;
+                if (minutes.length === 1) return `At minute ${minutes[0]} of every hour`;
+                return `At minutes ${minutes.join(', ')} of every hour`;
+            }
+
+            if (everyMinute && !everyHour) {
+                const step = detectStep(hours, 0, 23);
+                if (step) return `Every minute, every ${step.step} hours`;
+                return `Every minute, during hours ${formatRanges(cron.hour.values)}`;
+            }
+
+            // Specific minutes and hours
+            if (minutes.length === 1 && hours.length === 1) {
+                return `At ${pad(hours[0])}:${pad(minutes[0])}`;
+            }
+            if (minutes.length === 1) {
+                const stepH = detectStep(hours, 0, 23);
+                if (stepH) return `At minute ${minutes[0]} past every ${stepH.step} hours`;
+                const hourList = hours.map(h => `${pad(h)}:${pad(minutes[0])}`).join(', ');
+                return `At ${hourList}`;
+            }
+            if (hours.length === 1) {
+                return `At minutes ${formatRanges(cron.minute.values)} past hour ${hours[0]}`;
+            }
+            const stepM = detectStep(minutes, 0, 59);
+            if (stepM) return `Every ${stepM.step} minutes, during hours ${formatRanges(cron.hour.values)}`;
+            return `At minutes ${formatRanges(cron.minute.values)} of hours ${formatRanges(cron.hour.values)}`;
+        }
+
+        function formatRanges(values, labels = null) {
+            const sorted = [...values].sort((a, b) => a - b);
+            const ranges = toRanges(sorted);
+            return ranges.map(([a, b]) => {
+                const la = labels ? labels[a] : a;
+                const lb = labels ? labels[b] : b;
+                return a === b ? `${la}` : `${la}–${lb}`;
+            }).join(', ');
+        }
+
+        function describe(cron) {
+            const parts = [describeTime(cron)];
+
+            if (cron.dom.restricted) {
+                const domVals = [...cron.dom.values].sort((a, b) => a - b);
+                const step = detectStep(domVals, 1, 31);
+                if (step) {
+                    parts.push(`every ${step.step} days of the month starting on the ${ordinal(step.from)}`);
+                } else {
+                    parts.push(`on day-of-month ${formatRanges(cron.dom.values)}`);
+                }
+            }
+
+            if (cron.month.restricted) {
+                parts.push(`in ${formatRanges(cron.month.values, MONTH_LABELS)}`);
+            }
+
+            if (cron.dow.restricted) {
+                const joiner = cron.dom.restricted ? 'or on' : 'on';
+                parts.push(`${joiner} ${formatRanges(cron.dow.values, DOW_LABELS)}`);
+            }
+
+            return parts.join(', ');
+        }
+
+        function ordinal(n) {
+            const s = ['th', 'st', 'nd', 'rd'];
+            const v = n % 100;
+            return n + (s[(v - 20) % 10] || s[v] || s[0]);
+        }
+
+        function formatDate(date) {
+            const opts = {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            };
+            return date.toLocaleString(undefined, opts);
+        }
+
+        function relativeTime(date, from) {
+            let diff = Math.round((date - from) / 1000);
+            if (diff < 0) return 'in the past';
+            if (diff < 60) return `in ${diff}s`;
+            const minutes = Math.floor(diff / 60);
+            if (minutes < 60) return `in ${minutes} min`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `in ${hours}h ${minutes % 60}m`;
+            const days = Math.floor(hours / 24);
+            if (days < 30) return `in ${days}d ${hours % 24}h`;
+            const months = Math.floor(days / 30);
+            if (months < 12) return `in ~${months} months`;
+            const years = (days / 365).toFixed(1);
+            return `in ~${years} years`;
+        }
+
+        // DOM
+        const input = document.getElementById('cronInput');
+        const descriptionBox = document.getElementById('descriptionBox');
+        const nextRunsList = document.getElementById('nextRuns');
+        const examplesContainer = document.getElementById('examples');
+        const tzLabel = document.getElementById('tzLabel');
+
+        tzLabel.textContent = '(' + Intl.DateTimeFormat().resolvedOptions().timeZone + ')';
+
+        EXAMPLES.forEach(ex => {
+            const chip = document.createElement('button');
+            chip.className = 'example-chip';
+            chip.type = 'button';
+            chip.textContent = ex;
+            chip.addEventListener('click', () => {
+                input.value = ex;
+                update();
+                input.focus();
+            });
+            examplesContainer.appendChild(chip);
+        });
+
+        function showError(msg) {
+            descriptionBox.innerHTML = '';
+            const box = document.createElement('div');
+            box.className = 'error';
+            box.textContent = msg;
+            descriptionBox.appendChild(box);
+            nextRunsList.innerHTML = '';
+        }
+
+        function showDescription(text) {
+            descriptionBox.innerHTML = '';
+            const box = document.createElement('div');
+            box.className = 'description';
+            box.textContent = text;
+            descriptionBox.appendChild(box);
+        }
+
+        function renderRuns(runs, now) {
+            nextRunsList.innerHTML = '';
+            if (runs.length === 0) {
+                const li = document.createElement('li');
+                li.textContent = 'No upcoming runs found within the search window.';
+                nextRunsList.appendChild(li);
+                return;
+            }
+            runs.forEach((d, i) => {
+                const li = document.createElement('li');
+
+                const idx = document.createElement('span');
+                idx.className = 'run-index';
+                idx.textContent = `#${i + 1}`;
+
+                const dateEl = document.createElement('span');
+                dateEl.className = 'run-date';
+                dateEl.textContent = formatDate(d);
+
+                const relEl = document.createElement('span');
+                relEl.className = 'run-relative';
+                relEl.textContent = relativeTime(d, now);
+
+                li.appendChild(idx);
+                li.appendChild(dateEl);
+                li.appendChild(relEl);
+                nextRunsList.appendChild(li);
+            });
+        }
+
+        function update() {
+            const raw = input.value;
+            let cron;
+            try {
+                cron = parseCron(raw);
+            } catch (e) {
+                showError(e.message);
+                return;
+            }
+            try {
+                showDescription(describe(cron));
+                const now = new Date();
+                const runs = nextRuns(cron, 10, now);
+                renderRuns(runs, now);
+            } catch (e) {
+                showError(e.message);
+            }
+        }
+
+        input.addEventListener('input', update);
+        update();
+    </script>
+</body>
+</html>
