@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG to PNG/JPEG Converter</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .card h2 {
+            font-size: 1rem;
+            color: #667eea;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+
+        .dropzone {
+            border: 2px dashed #c3c9f7;
+            border-radius: 10px;
+            padding: 2rem 1rem;
+            text-align: center;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .dropzone:hover,
+        .dropzone.dragover {
+            border-color: #667eea;
+            background: #f5f6ff;
+        }
+
+        .dropzone p {
+            margin-bottom: 0.5rem;
+        }
+
+        .dropzone .hint {
+            font-size: 0.85rem;
+            color: #999;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        textarea#svgInput {
+            width: 100%;
+            min-height: 140px;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.85rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            resize: vertical;
+            color: #333;
+        }
+
+        textarea#svgInput:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .preview-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+            background:
+                linear-gradient(45deg, #eee 25%, transparent 25%),
+                linear-gradient(-45deg, #eee 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #eee 75%),
+                linear-gradient(-45deg, transparent 75%, #eee 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            border-radius: 8px;
+            overflow: auto;
+            padding: 1rem;
+        }
+
+        .preview-wrap img,
+        .preview-wrap svg {
+            max-width: 100%;
+            max-height: 400px;
+        }
+
+        .empty-state {
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        .options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .option-group label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .format-toggle {
+            display: flex;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .format-toggle button {
+            border: none;
+            background: white;
+            padding: 0.6rem 1.25rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: #666;
+            transition: all 0.2s ease;
+        }
+
+        .format-toggle button.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .dims input,
+        .quality-row input[type="number"] {
+            width: 90px;
+            padding: 0.5rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .dims input:focus,
+        .quality-row input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .dims {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .dims span {
+            color: #999;
+        }
+
+        .bg-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .bg-row input[type="color"] {
+            width: 44px;
+            height: 36px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        .bg-row label.checkbox {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+            color: #666;
+            text-transform: none;
+            font-weight: 400;
+        }
+
+        .quality-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .quality-row input[type="range"] {
+            width: 140px;
+        }
+
+        button.primary {
+            display: inline-block;
+            margin-top: 1.5rem;
+            padding: 0.9rem 1.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            background: #10b981;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button.primary:hover:not(:disabled) {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        button.primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 0.75rem;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-2px);
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 1.5rem 0.5rem;
+            }
+
+            .card {
+                padding: 1.25rem;
+            }
+
+            button.primary {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-btn" title="Back to apps">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+    </a>
+
+    <div class="container">
+        <header>
+            <h1>SVG to PNG/JPEG</h1>
+            <p class="subtitle">Paste or upload an SVG and export it as a raster image</p>
+        </header>
+
+        <div class="card">
+            <h2>Source SVG</h2>
+            <div class="dropzone" id="dropzone">
+                <p>Drop an .svg file here, or click to browse</p>
+                <p class="hint">You can also paste raw SVG markup below</p>
+            </div>
+            <input type="file" id="fileInput" accept=".svg,image/svg+xml">
+            <textarea id="svgInput" placeholder="&lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot;&gt;...&lt;/svg&gt;"></textarea>
+            <div class="error" id="errorMsg"></div>
+        </div>
+
+        <div class="card">
+            <h2>Preview</h2>
+            <div class="preview-wrap" id="previewWrap">
+                <span class="empty-state">No SVG loaded yet</span>
+            </div>
+
+            <div class="options">
+                <div class="option-group">
+                    <label>Output Format</label>
+                    <div class="format-toggle">
+                        <button type="button" id="pngBtn" class="active">PNG</button>
+                        <button type="button" id="jpegBtn">JPEG</button>
+                    </div>
+                </div>
+
+                <div class="option-group">
+                    <label>Dimensions (px)</label>
+                    <div class="dims">
+                        <input type="number" id="widthInput" min="1" placeholder="Width">
+                        <span>&times;</span>
+                        <input type="number" id="heightInput" min="1" placeholder="Height">
+                    </div>
+                </div>
+
+                <div class="option-group" id="qualityGroup" style="display:none;">
+                    <label>JPEG Quality</label>
+                    <div class="quality-row">
+                        <input type="range" id="qualityRange" min="1" max="100" value="92">
+                        <span id="qualityValue">92%</span>
+                    </div>
+                </div>
+
+                <div class="option-group">
+                    <label>Background</label>
+                    <div class="bg-row">
+                        <input type="color" id="bgColor" value="#ffffff">
+                        <label class="checkbox">
+                            <input type="checkbox" id="transparentBg" checked>
+                            Transparent
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <button class="primary" id="downloadBtn" disabled>Download Image</button>
+        </div>
+    </div>
+
+    <script>
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const svgInput = document.getElementById('svgInput');
+        const previewWrap = document.getElementById('previewWrap');
+        const errorMsg = document.getElementById('errorMsg');
+        const widthInput = document.getElementById('widthInput');
+        const heightInput = document.getElementById('heightInput');
+        const pngBtn = document.getElementById('pngBtn');
+        const jpegBtn = document.getElementById('jpegBtn');
+        const qualityGroup = document.getElementById('qualityGroup');
+        const qualityRange = document.getElementById('qualityRange');
+        const qualityValue = document.getElementById('qualityValue');
+        const bgColor = document.getElementById('bgColor');
+        const transparentBg = document.getElementById('transparentBg');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        let format = 'png';
+        let currentSvgText = '';
+        let naturalWidth = 0;
+        let naturalHeight = 0;
+        let aspectRatio = 1;
+        let updatingDims = false;
+
+        function showError(msg) {
+            errorMsg.textContent = msg;
+            errorMsg.classList.add('show');
+        }
+
+        function clearError() {
+            errorMsg.textContent = '';
+            errorMsg.classList.remove('show');
+        }
+
+        function setSvgText(text) {
+            currentSvgText = text;
+            svgInput.value = text;
+            loadPreview(text);
+        }
+
+        function parseDimensions(svgEl) {
+            let w = parseFloat(svgEl.getAttribute('width'));
+            let h = parseFloat(svgEl.getAttribute('height'));
+
+            if ((!w || !h) && svgEl.getAttribute('viewBox')) {
+                const parts = svgEl.getAttribute('viewBox').trim().split(/[\s,]+/).map(Number);
+                if (parts.length === 4) {
+                    w = w || parts[2];
+                    h = h || parts[3];
+                }
+            }
+
+            if (!w || !h) {
+                w = w || 300;
+                h = h || 150;
+            }
+
+            return { w, h };
+        }
+
+        function loadPreview(text) {
+            clearError();
+            downloadBtn.disabled = true;
+
+            if (!text.trim()) {
+                previewWrap.innerHTML = '<span class="empty-state">No SVG loaded yet</span>';
+                return;
+            }
+
+            let doc;
+            try {
+                const parser = new DOMParser();
+                doc = parser.parseFromString(text, 'image/svg+xml');
+                const parserError = doc.querySelector('parsererror');
+                if (parserError) {
+                    throw new Error('Invalid SVG markup');
+                }
+            } catch (e) {
+                showError('Could not parse SVG: ' + e.message);
+                previewWrap.innerHTML = '<span class="empty-state">No SVG loaded yet</span>';
+                return;
+            }
+
+            const svgEl = doc.documentElement;
+            if (!svgEl || svgEl.nodeName.toLowerCase() !== 'svg') {
+                showError('That file does not look like a valid SVG.');
+                previewWrap.innerHTML = '<span class="empty-state">No SVG loaded yet</span>';
+                return;
+            }
+
+            const dims = parseDimensions(svgEl);
+            naturalWidth = dims.w;
+            naturalHeight = dims.h;
+            aspectRatio = naturalWidth / naturalHeight;
+
+            updatingDims = true;
+            widthInput.value = Math.round(naturalWidth);
+            heightInput.value = Math.round(naturalHeight);
+            updatingDims = false;
+
+            previewWrap.innerHTML = '';
+            previewWrap.appendChild(doc.importNode(svgEl, true));
+
+            downloadBtn.disabled = false;
+        }
+
+        function loadFile(file) {
+            if (!file) return;
+            if (!/\.svg$/i.test(file.name) && file.type !== 'image/svg+xml') {
+                showError('Please choose a .svg file.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => setSvgText(e.target.result);
+            reader.onerror = () => showError('Could not read that file.');
+            reader.readAsText(file);
+        }
+
+        dropzone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => loadFile(e.target.files[0]));
+
+        ['dragenter', 'dragover'].forEach(evt => {
+            dropzone.addEventListener(evt, (e) => {
+                e.preventDefault();
+                dropzone.classList.add('dragover');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(evt => {
+            dropzone.addEventListener(evt, (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+            });
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files && e.dataTransfer.files[0];
+            loadFile(file);
+        });
+
+        let debounceTimer = null;
+        svgInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                currentSvgText = svgInput.value;
+                loadPreview(currentSvgText);
+            }, 300);
+        });
+
+        widthInput.addEventListener('input', () => {
+            if (updatingDims || !aspectRatio) return;
+            const w = parseFloat(widthInput.value);
+            if (w > 0) {
+                updatingDims = true;
+                heightInput.value = Math.round(w / aspectRatio);
+                updatingDims = false;
+            }
+        });
+
+        heightInput.addEventListener('input', () => {
+            if (updatingDims || !aspectRatio) return;
+            const h = parseFloat(heightInput.value);
+            if (h > 0) {
+                updatingDims = true;
+                widthInput.value = Math.round(h * aspectRatio);
+                updatingDims = false;
+            }
+        });
+
+        function setFormat(newFormat) {
+            format = newFormat;
+            pngBtn.classList.toggle('active', format === 'png');
+            jpegBtn.classList.toggle('active', format === 'jpeg');
+            qualityGroup.style.display = format === 'jpeg' ? 'flex' : 'none';
+
+            if (format === 'jpeg') {
+                transparentBg.checked = false;
+                transparentBg.disabled = true;
+            } else {
+                transparentBg.disabled = false;
+            }
+        }
+
+        pngBtn.addEventListener('click', () => setFormat('png'));
+        jpegBtn.addEventListener('click', () => setFormat('jpeg'));
+
+        qualityRange.addEventListener('input', () => {
+            qualityValue.textContent = qualityRange.value + '%';
+        });
+
+        function svgTextToDataUrl(text) {
+            const encoded = encodeURIComponent(text)
+                .replace(/'/g, '%27')
+                .replace(/"/g, '%22');
+            return 'data:image/svg+xml;charset=utf-8,' + encoded;
+        }
+
+        downloadBtn.addEventListener('click', () => {
+            if (!currentSvgText.trim()) return;
+            clearError();
+
+            const targetW = Math.max(1, Math.round(parseFloat(widthInput.value) || naturalWidth));
+            const targetH = Math.max(1, Math.round(parseFloat(heightInput.value) || naturalHeight));
+
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = targetW;
+                canvas.height = targetH;
+                const ctx = canvas.getContext('2d');
+
+                if (format === 'jpeg' || !transparentBg.checked) {
+                    ctx.fillStyle = bgColor.value;
+                    ctx.fillRect(0, 0, targetW, targetH);
+                }
+
+                ctx.drawImage(img, 0, 0, targetW, targetH);
+
+                const mime = format === 'jpeg' ? 'image/jpeg' : 'image/png';
+                const quality = format === 'jpeg' ? qualityRange.value / 100 : undefined;
+
+                canvas.toBlob((blob) => {
+                    if (!blob) {
+                        showError('Conversion failed. Try a simpler SVG or different dimensions.');
+                        return;
+                    }
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'converted.' + (format === 'jpeg' ? 'jpg' : 'png');
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, mime, quality);
+            };
+            img.onerror = () => {
+                showError('Could not render this SVG. Check that the markup is valid.');
+            };
+            img.src = svgTextToDataUrl(currentSvgText);
+        });
+
+        setFormat('png');
+    </script>
+</body>
+</html>
