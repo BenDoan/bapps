@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG to PNG/JPEG Converter</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 140px;
+            padding: 0.75rem;
+            font-size: 0.85rem;
+            font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        textarea:focus {
+            border-color: #667eea;
+        }
+
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 1.25rem;
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 1rem;
+        }
+
+        .drop-zone:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .drop-zone.dragover {
+            border-color: #667eea;
+            background: #eef1ff;
+            color: #667eea;
+        }
+
+        .drop-zone strong {
+            color: #667eea;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .control label {
+            margin-bottom: 0.35rem;
+        }
+
+        select,
+        input[type="number"],
+        input[type="text"] {
+            width: 100%;
+            padding: 0.6rem;
+            font-size: 0.95rem;
+            font-family: inherit;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            outline: none;
+            background: white;
+            color: #374151;
+            transition: border-color 0.2s ease;
+        }
+
+        select:focus,
+        input[type="number"]:focus,
+        input[type="text"]:focus {
+            border-color: #667eea;
+        }
+
+        input[type="color"] {
+            width: 100%;
+            height: 41px;
+            padding: 2px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: #667eea;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #374151;
+            font-size: 0.9rem;
+            margin-top: 0.4rem;
+        }
+
+        .checkbox-row input {
+            accent-color: #667eea;
+            width: 16px;
+            height: 16px;
+        }
+
+        .checkbox-row label {
+            margin: 0;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Keeps the chosen color visible while the control is inactive
+           (a disabled color input renders as an empty box) */
+        .inactive {
+            opacity: 0.45;
+            pointer-events: none;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+            letter-spacing: 0.02em;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .download-btn {
+            background-color: #667eea;
+        }
+
+        .download-btn:hover:not(:disabled) {
+            background-color: #5a6fd6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .copy-btn {
+            background-color: #10b981;
+        }
+
+        .copy-btn:hover:not(:disabled) {
+            background-color: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .clear-btn {
+            background-color: #6b7280;
+        }
+
+        .clear-btn:hover:not(:disabled) {
+            background-color: #4b5563;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .preview-wrap {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+            background-color: #fff;
+            background-image:
+                linear-gradient(45deg, #eceff3 25%, transparent 25%),
+                linear-gradient(-45deg, #eceff3 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #eceff3 75%),
+                linear-gradient(-45deg, transparent 75%, #eceff3 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+        }
+
+        .preview-wrap img {
+            max-width: 100%;
+            max-height: 320px;
+            display: block;
+        }
+
+        .placeholder {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        .meta {
+            color: #6b7280;
+            font-size: 0.85rem;
+            margin-top: 0.75rem;
+            text-align: center;
+            min-height: 1.2em;
+        }
+
+        .error {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            min-height: 1.2em;
+            word-break: break-word;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-2px);
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                padding: 0 3rem;
+                font-size: 1.6rem;
+            }
+
+            .buttons {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-btn" title="Back to apps">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+    </a>
+    <div class="container">
+        <h1>SVG to PNG / JPEG</h1>
+
+        <div class="panel">
+            <div class="drop-zone" id="dropZone">
+                Drop an <strong>.svg</strong> file here, <strong>click to browse</strong>, or paste SVG markup below
+            </div>
+            <input type="file" id="fileInput" accept=".svg,image/svg+xml" class="hidden">
+
+            <label for="svgInput">SVG markup</label>
+            <textarea id="svgInput" placeholder="&lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 100 100&quot;&gt;...&lt;/svg&gt;" spellcheck="false"></textarea>
+            <div class="error" id="error"></div>
+        </div>
+
+        <div class="panel">
+            <div class="controls">
+                <div class="control">
+                    <label for="format">Format</label>
+                    <select id="format">
+                        <option value="image/png">PNG</option>
+                        <option value="image/jpeg">JPEG</option>
+                    </select>
+                </div>
+                <div class="control">
+                    <label for="scale">Scale</label>
+                    <select id="scale">
+                        <option value="1">1x</option>
+                        <option value="2" selected>2x</option>
+                        <option value="3">3x</option>
+                        <option value="4">4x</option>
+                        <option value="custom">Custom size</option>
+                    </select>
+                </div>
+                <div class="control" id="widthControl">
+                    <label for="widthInput">Width (px)</label>
+                    <input type="number" id="widthInput" min="1" max="16384" step="1">
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="lockAspect" checked>
+                        <label for="lockAspect">Lock aspect ratio</label>
+                    </div>
+                </div>
+                <div class="control" id="heightControl">
+                    <label for="heightInput">Height (px)</label>
+                    <input type="number" id="heightInput" min="1" max="16384" step="1">
+                </div>
+                <div class="control" id="bgControl">
+                    <label for="bgColor">Background</label>
+                    <input type="color" id="bgColor" value="#ffffff">
+                    <div class="checkbox-row" id="transparentRow">
+                        <input type="checkbox" id="transparent" checked>
+                        <label for="transparent">Transparent</label>
+                    </div>
+                </div>
+                <div class="control hidden" id="qualityControl">
+                    <label for="quality">JPEG quality: <span id="qualityValue">92</span>%</label>
+                    <input type="range" id="quality" min="10" max="100" step="1" value="92">
+                </div>
+                <div class="control">
+                    <label for="filename">File name</label>
+                    <input type="text" id="filename" value="image" spellcheck="false">
+                </div>
+            </div>
+
+            <label>Output preview</label>
+            <div class="preview-wrap" id="previewWrap">
+                <span class="placeholder" id="placeholder">Paste or drop an SVG to see the converted result</span>
+            </div>
+            <div class="meta" id="meta"></div>
+        </div>
+
+        <div class="buttons">
+            <button class="download-btn" id="downloadBtn" disabled>Download</button>
+            <button class="copy-btn" id="copyBtn" disabled>Copy Image</button>
+            <button class="clear-btn" id="clearBtn">Clear</button>
+        </div>
+    </div>
+
+    <script>
+        const MAX_DIMENSION = 16384;
+        const DEFAULT_SIZE = { width: 512, height: 512 };
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const svgInput = document.getElementById('svgInput');
+        const errorEl = document.getElementById('error');
+        const formatSelect = document.getElementById('format');
+        const scaleSelect = document.getElementById('scale');
+        const widthInput = document.getElementById('widthInput');
+        const heightInput = document.getElementById('heightInput');
+        const lockAspect = document.getElementById('lockAspect');
+        const bgColor = document.getElementById('bgColor');
+        const transparent = document.getElementById('transparent');
+        const transparentRow = document.getElementById('transparentRow');
+        const qualityControl = document.getElementById('qualityControl');
+        const quality = document.getElementById('quality');
+        const qualityValue = document.getElementById('qualityValue');
+        const filenameInput = document.getElementById('filename');
+        const previewWrap = document.getElementById('previewWrap');
+        const placeholder = document.getElementById('placeholder');
+        const meta = document.getElementById('meta');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const clearBtn = document.getElementById('clearBtn');
+
+        // Intrinsic size of the currently loaded SVG
+        let naturalSize = null;
+        // Latest rendered result: { blob, url }
+        let result = null;
+        let renderToken = 0;
+
+        function setError(message) {
+            errorEl.textContent = message || '';
+        }
+
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        // Parse a length attribute like "120", "120px", "10em" -> pixels, or null
+        function parseLength(value) {
+            if (!value) return null;
+            const match = String(value).trim().match(/^([0-9]*\.?[0-9]+)\s*(px|pt|pc|mm|cm|in|em|ex|rem)?$/i);
+            if (!match) return null;
+            const number = parseFloat(match[1]);
+            if (!isFinite(number) || number <= 0) return null;
+            const units = {
+                px: 1, pt: 96 / 72, pc: 16, mm: 96 / 25.4,
+                cm: 96 / 2.54, in: 96, em: 16, ex: 8, rem: 16
+            };
+            return number * (units[(match[2] || 'px').toLowerCase()] || 1);
+        }
+
+        function parseViewBox(svg) {
+            const raw = svg.getAttribute('viewBox');
+            if (!raw) return null;
+            const parts = raw.trim().split(/[\s,]+/).map(Number);
+            if (parts.length !== 4 || parts.some(n => !isFinite(n))) return null;
+            if (parts[2] <= 0 || parts[3] <= 0) return null;
+            return { width: parts[2], height: parts[3] };
+        }
+
+        // Parse markup into an <svg> element, throwing a readable error on failure
+        function parseSvg(text) {
+            const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+            if (doc.querySelector('parsererror')) {
+                throw new Error('Could not parse the SVG markup. Check that the tags are well-formed.');
+            }
+            const svg = doc.documentElement;
+            if (!svg || svg.nodeName.toLowerCase() !== 'svg') {
+                throw new Error('That does not look like an SVG document (no root <svg> element).');
+            }
+            return svg;
+        }
+
+        // Intrinsic pixel size from width/height attributes, falling back to viewBox
+        function intrinsicSize(svg) {
+            const viewBox = parseViewBox(svg);
+            const width = parseLength(svg.getAttribute('width'));
+            const height = parseLength(svg.getAttribute('height'));
+
+            if (width && height) return { width, height };
+            if (viewBox) {
+                const ratio = viewBox.width / viewBox.height;
+                if (width) return { width, height: width / ratio };
+                if (height) return { width: height * ratio, height };
+                return { width: viewBox.width, height: viewBox.height };
+            }
+            if (width) return { width, height: width };
+            if (height) return { width: height, height };
+            return { ...DEFAULT_SIZE };
+        }
+
+        // Serialize the SVG at an explicit pixel size so rasterization is deterministic
+        function svgDataUrl(svg, width, height) {
+            const clone = svg.cloneNode(true);
+            if (!clone.getAttribute('xmlns')) {
+                clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            }
+            if (!clone.getAttribute('viewBox')) {
+                const size = intrinsicSize(svg);
+                clone.setAttribute('viewBox', `0 0 ${size.width} ${size.height}`);
+            }
+            clone.setAttribute('width', width);
+            clone.setAttribute('height', height);
+            const markup = new XMLSerializer().serializeToString(clone);
+            return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(markup);
+        }
+
+        function loadImage(url) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(new Error('The browser could not render this SVG.'));
+                img.src = url;
+            });
+        }
+
+        function canvasToBlob(canvas, type, encoderQuality) {
+            return new Promise((resolve, reject) => {
+                canvas.toBlob(blob => {
+                    if (blob) resolve(blob);
+                    else reject(new Error('Failed to encode the image.'));
+                }, type, encoderQuality);
+            });
+        }
+
+        function targetSize() {
+            const width = Math.round(Number(widthInput.value));
+            const height = Math.round(Number(heightInput.value));
+            if (!isFinite(width) || !isFinite(height) || width < 1 || height < 1) return null;
+            if (width > MAX_DIMENSION || height > MAX_DIMENSION) return null;
+            return { width, height };
+        }
+
+        function isTransparent() {
+            return formatSelect.value === 'image/png' && transparent.checked;
+        }
+
+        function syncFormatControls() {
+            const isJpeg = formatSelect.value === 'image/jpeg';
+            qualityControl.classList.toggle('hidden', !isJpeg);
+            transparentRow.classList.toggle('hidden', isJpeg);
+            bgColor.classList.toggle('inactive', isTransparent());
+        }
+
+        function syncSizeControls() {
+            const custom = scaleSelect.value === 'custom';
+            widthInput.disabled = !custom;
+            heightInput.disabled = !custom || lockAspect.checked;
+            lockAspect.disabled = !custom;
+
+            if (!custom && naturalSize) {
+                const scale = Number(scaleSelect.value);
+                widthInput.value = Math.max(1, Math.round(naturalSize.width * scale));
+                heightInput.value = Math.max(1, Math.round(naturalSize.height * scale));
+            }
+        }
+
+        function clearResult() {
+            if (result) {
+                URL.revokeObjectURL(result.url);
+                result = null;
+            }
+            downloadBtn.disabled = true;
+            copyBtn.disabled = true;
+        }
+
+        function showPlaceholder(message) {
+            previewWrap.innerHTML = '';
+            placeholder.textContent = message;
+            previewWrap.appendChild(placeholder);
+        }
+
+        async function render() {
+            const token = ++renderToken;
+            clearResult();
+            meta.textContent = '';
+
+            const text = svgInput.value.trim();
+            if (!text) {
+                setError('');
+                naturalSize = null;
+                showPlaceholder('Paste or drop an SVG to see the converted result');
+                return;
+            }
+
+            let svg;
+            try {
+                svg = parseSvg(text);
+            } catch (e) {
+                setError(e.message);
+                showPlaceholder('Nothing to preview');
+                return;
+            }
+
+            naturalSize = intrinsicSize(svg);
+            syncSizeControls();
+
+            const size = targetSize();
+            if (!size) {
+                setError(`Enter a width and height between 1 and ${MAX_DIMENSION} pixels.`);
+                showPlaceholder('Nothing to preview');
+                return;
+            }
+
+            setError('');
+
+            try {
+                const img = await loadImage(svgDataUrl(svg, size.width, size.height));
+                if (token !== renderToken) return;
+
+                const canvas = document.createElement('canvas');
+                canvas.width = size.width;
+                canvas.height = size.height;
+                const ctx = canvas.getContext('2d');
+
+                if (!isTransparent()) {
+                    ctx.fillStyle = bgColor.value;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                const type = formatSelect.value;
+                const blob = await canvasToBlob(canvas, type, Number(quality.value) / 100);
+                if (token !== renderToken) return;
+
+                result = { blob, url: URL.createObjectURL(blob) };
+
+                const preview = new Image();
+                preview.src = result.url;
+                preview.alt = 'Converted image preview';
+                previewWrap.innerHTML = '';
+                previewWrap.appendChild(preview);
+
+                const label = type === 'image/png' ? 'PNG' : 'JPEG';
+                meta.textContent = `${label} · ${size.width} × ${size.height} px · ${formatBytes(blob.size)} ` +
+                    `(source ${Math.round(naturalSize.width)} × ${Math.round(naturalSize.height)})`;
+                downloadBtn.disabled = false;
+                copyBtn.disabled = type !== 'image/png' || !window.ClipboardItem;
+            } catch (e) {
+                if (token !== renderToken) return;
+                setError(e.message);
+                showPlaceholder('Nothing to preview');
+            }
+        }
+
+        let renderTimer = null;
+        function scheduleRender() {
+            clearTimeout(renderTimer);
+            renderTimer = setTimeout(render, 200);
+        }
+
+        function loadFile(file) {
+            if (!file) return;
+            const isSvg = file.type === 'image/svg+xml' || /\.svg$/i.test(file.name);
+            if (!isSvg) {
+                setError('Please choose an SVG file.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+                svgInput.value = String(reader.result);
+                const base = file.name.replace(/\.svg$/i, '').trim();
+                if (base) filenameInput.value = base;
+                render();
+            };
+            reader.onerror = () => setError('Could not read that file.');
+            reader.readAsText(file);
+        }
+
+        // Input sources
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', () => {
+            loadFile(fileInput.files[0]);
+            fileInput.value = '';
+        });
+
+        ['dragenter', 'dragover'].forEach(name => {
+            dropZone.addEventListener(name, e => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(name => {
+            dropZone.addEventListener(name, e => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+            });
+        });
+
+        dropZone.addEventListener('drop', e => {
+            const file = e.dataTransfer.files[0];
+            if (file) loadFile(file);
+        });
+
+        document.addEventListener('paste', e => {
+            if (e.target === svgInput || e.target === filenameInput) return;
+            const file = Array.from(e.clipboardData.files || [])
+                .find(f => f.type === 'image/svg+xml' || /\.svg$/i.test(f.name));
+            if (file) {
+                e.preventDefault();
+                loadFile(file);
+                return;
+            }
+            const text = e.clipboardData.getData('text');
+            if (text && text.trim().length) {
+                e.preventDefault();
+                svgInput.value = text;
+                render();
+            }
+        });
+
+        // Controls
+        svgInput.addEventListener('input', scheduleRender);
+
+        formatSelect.addEventListener('change', () => {
+            syncFormatControls();
+            render();
+        });
+
+        scaleSelect.addEventListener('change', () => {
+            syncSizeControls();
+            render();
+        });
+
+        widthInput.addEventListener('input', () => {
+            if (lockAspect.checked && naturalSize) {
+                const width = Number(widthInput.value);
+                if (isFinite(width) && width > 0) {
+                    heightInput.value = Math.max(1, Math.round(width * naturalSize.height / naturalSize.width));
+                }
+            }
+            scheduleRender();
+        });
+
+        heightInput.addEventListener('input', scheduleRender);
+
+        lockAspect.addEventListener('change', () => {
+            syncSizeControls();
+            if (lockAspect.checked) widthInput.dispatchEvent(new Event('input'));
+        });
+
+        transparent.addEventListener('change', () => {
+            syncFormatControls();
+            render();
+        });
+
+        bgColor.addEventListener('input', scheduleRender);
+
+        quality.addEventListener('input', () => {
+            qualityValue.textContent = quality.value;
+            scheduleRender();
+        });
+
+        // Output actions
+        downloadBtn.addEventListener('click', () => {
+            if (!result) return;
+            const extension = formatSelect.value === 'image/png' ? 'png' : 'jpg';
+            const base = (filenameInput.value.trim() || 'image').replace(/[\\/:*?"<>|]/g, '-');
+            const link = document.createElement('a');
+            link.href = result.url;
+            link.download = `${base}.${extension}`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        });
+
+        copyBtn.addEventListener('click', async () => {
+            if (!result || !window.ClipboardItem) return;
+            const original = copyBtn.textContent;
+            try {
+                await navigator.clipboard.write([
+                    new ClipboardItem({ [result.blob.type]: result.blob })
+                ]);
+                copyBtn.textContent = 'Copied!';
+            } catch (e) {
+                copyBtn.textContent = 'Copy failed';
+            }
+            setTimeout(() => { copyBtn.textContent = original; }, 1500);
+        });
+
+        clearBtn.addEventListener('click', () => {
+            svgInput.value = '';
+            filenameInput.value = 'image';
+            setError('');
+            render();
+        });
+
+        // Initial state
+        widthInput.value = DEFAULT_SIZE.width;
+        heightInput.value = DEFAULT_SIZE.height;
+        syncFormatControls();
+        syncSizeControls();
+    </script>
+</body>
+</html>
