@@ -296,6 +296,90 @@
 
         footer a { color: #9ec3ff; }
 
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 0.35rem;
+            margin: 0 auto 1rem;
+            padding: 0.25rem;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            width: fit-content;
+        }
+
+        .tab {
+            padding: 0.5rem 1.1rem;
+            font-size: 0.85rem;
+            font-family: inherit;
+            color: var(--muted);
+            background: none;
+            border: none;
+            border-radius: 9px;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .tab:hover { color: white; }
+        .tab.active { background: rgba(255, 255, 255, 0.14); color: white; }
+
+        .explainer {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 1rem 1.25rem;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .explainer h2 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+        .explainer code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 0.82rem;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 0.1rem 0.35rem;
+            border-radius: 5px;
+        }
+        .explainer ul { margin: 0.5rem 0 0 1.1rem; }
+
+        .rank-tools { display: flex; gap: 0.5rem; margin: 1.25rem 0 0.75rem; flex-wrap: wrap; }
+        .rank-tools .combo-input { flex: 1 1 220px; width: auto; }
+        .rank-tools .btn { width: auto; flex: 0 0 auto; }
+
+        .rank-list { list-style: none; }
+
+        .rank-row {
+            display: grid;
+            grid-template-columns: 2.6rem minmax(9rem, 1.1fr) minmax(4rem, 2fr) 3.4rem;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.55rem 0.9rem;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            margin-bottom: 0.4rem;
+            cursor: pointer;
+            transition: background 0.15s ease, transform 0.15s ease;
+        }
+
+        .rank-row:hover { background: rgba(255, 255, 255, 0.12); transform: translateX(2px); }
+        .rank-row.is-a { border-color: var(--a); }
+        .rank-row.is-b { border-color: var(--b); }
+
+        .rank-num { color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+        .rank-city { font-weight: 600; font-size: 0.95rem; }
+        .rank-city small { display: block; font-weight: 400; color: var(--muted); font-size: 0.72rem; margin-top: 0.15rem; }
+        .rank-bar { height: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+        .rank-bar i { display: block; height: 100%; border-radius: 5px; background: linear-gradient(90deg, #ffa45c, #7cb0ff); }
+        .rank-score { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .rank-empty { color: var(--muted); padding: 1rem 0; }
+
+        @media (max-width: 700px) {
+            .rank-row { grid-template-columns: 2rem 1fr 3.2rem; gap: 0.5rem; }
+            .rank-bar { display: none; }
+        }
+
         @media (max-width: 700px) {
             .pickers { grid-template-columns: 1fr; }
             .swap { width: 100%; height: auto; padding: 0.55rem; }
@@ -323,6 +407,18 @@
             <p class="subtitle">Head-to-head U.S. climate normals, 1991&ndash;2020 &middot; NOAA NCEI</p>
         </header>
 
+        <nav class="tabs">
+            <button class="tab active" id="tabCompare" type="button">Compare two cities</button>
+            <button class="tab" id="tabRank" type="button">BenFactor rankings</button>
+        </nav>
+
+        <div class="toolbar">
+            <button class="btn" id="unitBtn">Switch to &deg;C / mm</button>
+            <button class="btn" id="randomBtn">Random matchup</button>
+            <button class="btn" id="shareBtn">Copy link</button>
+        </div>
+
+        <div id="viewCompare">
         <div class="pickers">
             <div class="picker a">
                 <label for="cityA">City A</label>
@@ -345,12 +441,6 @@
             </div>
         </div>
 
-        <div class="toolbar">
-            <button class="btn" id="unitBtn">Switch to &deg;C / mm</button>
-            <button class="btn" id="randomBtn">Random matchup</button>
-            <button class="btn" id="shareBtn">Copy link</button>
-        </div>
-
         <div class="headline">
             <div class="city-card a" id="cardA"></div>
             <div class="city-card b" id="cardB"></div>
@@ -363,6 +453,32 @@
 
         <div class="section-title">Month by month</div>
         <div class="charts" id="charts"></div>
+        </div>
+
+        <div id="viewRank" hidden>
+            <div class="explainer">
+                <h2>What BenFactor measures</h2>
+                <p>One number for how pleasant a city's temperatures are. Every month is scored on how far its
+                average high and average low sit from a perfect 72&deg;F, and the twelve monthly scores are averaged.
+                100 is flawless; 0 is as rough as it gets.</p>
+                <ul>
+                    <li>Base penalty: <code>|temperature &minus; 72&deg;F|</code></li>
+                    <li>Above 85&deg;F: an extra <code>2 &times; (temperature &minus; 85)</code></li>
+                    <li>Below 45&deg;F: an extra <code>2 &times; (45 &minus; temperature)</code></li>
+                </ul>
+                <p>Highs and lows are both scored, so a city is rewarded for mild afternoons <em>and</em> mild nights.
+                The score is unitless and identical in &deg;C mode.</p>
+            </div>
+
+            <div class="rank-tools">
+                <input type="text" id="rankFilter" class="combo-input" placeholder="Filter by city, state or station&hellip;"
+                       autocomplete="off" spellcheck="false" aria-label="Filter rankings">
+                <button class="btn" id="rankOrderBtn" type="button">Worst first</button>
+            </div>
+
+            <div class="section-title" id="rankCount"></div>
+            <ol class="rank-list" id="rankList"></ol>
+        </div>
 
         <footer>
             <p><strong>Source:</strong> NOAA National Centers for Environmental Information,
@@ -409,6 +525,7 @@
                 met: { suffix: ' km/h', conv: v => v * 1.609344, dec: 1 }
             },
             days: { imp: { suffix: '', conv: v => v, dec: 1 }, met: { suffix: '', conv: v => v, dec: 1 } },
+            score: { imp: { suffix: '', conv: v => v, dec: 1 }, met: { suffix: '', conv: v => v, dec: 1 } },
             percent: { imp: { suffix: '%', conv: v => v, dec: 0 }, met: { suffix: '%', conv: v => v, dec: 0 } },
             degreeDays: { imp: { suffix: '', conv: v => v, dec: 0 }, met: { suffix: '', conv: v => v, dec: 0 } }
         };
@@ -440,6 +557,40 @@
             arr.forEach(v => { if (v !== null) { sum += v; seen = true; } });
             return seen ? sum : null;
         }
+        // BenFactor: how close a city's temperatures sit to a perfect 72 degrees F.
+        // Heat above 85 and cold below 45 carry an extra penalty on top of the distance.
+        const IDEAL_F = 72, HOT_F = 85, COLD_F = 45, EXTRA = 2;
+
+        function benPenalty(tempF) {
+            let penalty = Math.abs(tempF - IDEAL_F);
+            if (tempF > HOT_F) penalty += EXTRA * (tempF - HOT_F);
+            if (tempF < COLD_F) penalty += EXTRA * (COLD_F - tempF);
+            return penalty;
+        }
+        // Both the average high and the average low are scored, so mild days and
+        // mild nights each count for half the month.
+        function benMonth(c, i) {
+            if (c.x[i] === null || c.m[i] === null) return null;
+            const penalty = (benPenalty(c.x[i]) + benPenalty(c.m[i])) / 2;
+            return Math.max(0, 100 - penalty);
+        }
+        function benMonths(c) {
+            const out = [];
+            for (let i = 0; i < 12; i++) out.push(benMonth(c, i));
+            return out;
+        }
+        function benFactor(c) {
+            const months = benMonths(c);
+            if (months.some(v => v === null)) return null;
+            return months.reduce((a, b) => a + b, 0) / 12;
+        }
+
+        function plural(value, one, many) {
+            if (value === null || value === undefined) return '\u2014';
+            const n = Math.round(value);
+            return n + ' ' + (n === 1 ? one : many);
+        }
+
         function summerMean(arr) {
             if (!arr) return null;
             const vals = [arr[5], arr[6], arr[7]].filter(v => v !== null);
@@ -448,6 +599,7 @@
 
         // ---- head-to-head rows -------------------------------------------
         const ROWS = [
+            { label: 'BenFactor (100 = perfect)', kind: 'score', get: c => benFactor(c) },
             { label: 'Average annual temperature', kind: 'temp', get: c => c.a.tavg },
             { label: 'Average January temperature', kind: 'temp', get: c => c.t[0] },
             { label: 'Average August temperature', kind: 'temp', get: c => c.t[7] },
@@ -627,14 +779,16 @@
 
         // ---- rendering ----------------------------------------------------
         function cityCard(c) {
-            const bits = [c.st + ', ' + c.sst, 'Station ' + c.id, Math.round(c.el).toLocaleString() +
-                (metric ? '' : ' ft') + (metric ? '' : ''), ];
             const elev = metric ? Math.round(c.el / 3.28084).toLocaleString() + ' m'
                 : Math.round(c.el).toLocaleString() + ' ft';
+            const rank = rankOf(c);
+            const benLine = rank
+                ? '<br>BenFactor ' + benFactor(c).toFixed(1) + ' &middot; #' + rank + ' of ' + cities.length
+                : '';
             return '<div class="city-name">' + c.n + ', ' + c.s + '</div>' +
                 '<div class="city-meta">' + c.st + ', ' + c.sst + ' &middot; ' + c.id + '<br>' +
                 elev + ' elevation &middot; ' + c.la.toFixed(2) + '°, ' + c.lo.toFixed(2) + '° &middot; ' +
-                c.km.toFixed(0) + ' km from downtown</div>';
+                c.km.toFixed(0) + ' km from downtown' + benLine + '</div>';
         }
 
         function signed(kind, delta) {
@@ -692,6 +846,15 @@
                 lines.push('<b class="' + (dT > 0 ? 'a' : 'b') + '">' + disp(warm) + '</b> is ' +
                     fmt('tempDelta', Math.abs(dT)) + ' warmer than ' +
                     '<b class="' + (dT > 0 ? 'b' : 'a') + '">' + disp(cool) + '</b> on an average day.');
+            }
+
+            const ba = benFactor(a), bb = benFactor(b);
+            if (ba !== null && bb !== null) {
+                const nicer = ba > bb ? a : b;
+                lines.push('BenFactor: ' + nameA(a) + ' ' + ba.toFixed(1) + ', ' + nameB(b) + ' ' +
+                    bb.toFixed(1) + ' \u2014 ' + (nicer === a ? nameA(a) : nameB(b)) +
+                    ' spends more of the year near 72\u00B0F' +
+                    (rankOf(nicer) ? ' (#' + rankOf(nicer) + ' of ' + cities.length + ' cities)' : '') + '.');
             }
 
             const dJan = a.t[0] - b.t[0], dAug = a.t[7] - b.t[7];
@@ -961,6 +1124,15 @@
             const sa = { label: disp(a), color: COLOR_A }, sb = { label: disp(b), color: COLOR_B };
 
             addChart({
+                title: 'BenFactor by month', note: '100 = every hour near 72\u00B0F',
+                type: 'line', kind: 'score', wide: true,
+                series: [
+                    { label: disp(a), color: COLOR_A, values: benMonths(a) },
+                    { label: disp(b), color: COLOR_B, values: benMonths(b) }
+                ]
+            });
+
+            addChart({
                 title: 'Average temperature', note: 'monthly mean of daily highs and lows',
                 type: 'line', kind: 'temp', wide: true, zeroBase: false,
                 series: [
@@ -1065,6 +1237,108 @@
             }
         }
 
+        // ---- BenFactor rankings -------------------------------------------
+        const RANKED = cities
+            .map((c, i) => ({ i: i, score: benFactor(c) }))
+            .filter(r => r.score !== null)
+            .sort((x, y) => y.score - x.score);
+        const RANK_OF = {};
+        RANKED.forEach((r, n) => { RANK_OF[r.i] = n + 1; });
+
+        function rankOf(city) { return RANK_OF[cities.indexOf(city)] || null; }
+
+        const rankList = document.getElementById('rankList');
+        const rankCount = document.getElementById('rankCount');
+        const rankFilter = document.getElementById('rankFilter');
+        const rankOrderBtn = document.getElementById('rankOrderBtn');
+        let worstFirst = false;
+
+        function renderRankings() {
+            const query = rankFilter.value.trim();
+            let shown = RANKED;
+            if (query) {
+                const keep = {};
+                matchCities(query).forEach(m => { keep[m.i] = true; });
+                shown = RANKED.filter(r => keep[r.i]);
+            }
+            if (worstFirst) shown = shown.slice().reverse();
+
+            rankCount.textContent = query
+                ? shown.length + ' of ' + RANKED.length + ' cities'
+                : RANKED.length + ' cities, ' + (worstFirst ? 'worst' : 'best') + ' first';
+
+            if (!shown.length) {
+                rankList.innerHTML = '<li class="rank-empty">No city matches that filter</li>';
+                return;
+            }
+            const top = RANKED[0].score;
+            rankList.innerHTML = shown.map(r => {
+                const c = cities[r.i];
+                const meta = fmt('temp', c.a.tavg) + ' year-round \u00B7 ' +
+                    plural(c.a.hot90, 'day', 'days') + ' at 90\u00B0F+ \u00B7 ' +
+                    plural(c.a.freeze, 'freezing night', 'freezing nights');
+                const flag = r.i === comboA.index ? ' is-a' : (r.i === comboB.index ? ' is-b' : '');
+                return '<li class="rank-row' + flag + '" data-i="' + r.i + '" tabindex="0" ' +
+                    'title="Compare ' + escapeHtml(labelFor(c)) + '">' +
+                    '<span class="rank-num">#' + RANK_OF[r.i] + '</span>' +
+                    '<span class="rank-city">' + escapeHtml(labelFor(c)) +
+                    '<small>' + meta + '</small></span>' +
+                    '<span class="rank-bar"><i style="width:' +
+                    Math.max(2, (r.score / top) * 100).toFixed(1) + '%"></i></span>' +
+                    '<span class="rank-score">' + r.score.toFixed(1) + '</span></li>';
+            }).join('');
+        }
+
+        function pickFromRankings(i) {
+            if (i === comboB.index) comboB.set(comboA.index);
+            comboA.set(i);
+            setView('compare');
+        }
+
+        rankFilter.addEventListener('input', renderRankings);
+        rankOrderBtn.addEventListener('click', () => {
+            worstFirst = !worstFirst;
+            rankOrderBtn.textContent = worstFirst ? 'Best first' : 'Worst first';
+            renderRankings();
+        });
+        rankList.addEventListener('click', e => {
+            const row = e.target.closest('.rank-row');
+            if (row) pickFromRankings(+row.dataset.i);
+        });
+        rankList.addEventListener('keydown', e => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            const row = e.target.closest('.rank-row');
+            if (row) { e.preventDefault(); pickFromRankings(+row.dataset.i); }
+        });
+
+        // ---- views --------------------------------------------------------
+        const viewCompare = document.getElementById('viewCompare');
+        const viewRank = document.getElementById('viewRank');
+        const tabCompare = document.getElementById('tabCompare');
+        const tabRank = document.getElementById('tabRank');
+        let view = 'compare';
+
+        function setView(next) {
+            view = next;
+            const onRank = view === 'rank';
+            viewCompare.hidden = onRank;
+            viewRank.hidden = !onRank;
+            tabCompare.classList.toggle('active', !onRank);
+            tabRank.classList.toggle('active', onRank);
+            document.getElementById('randomBtn').hidden = onRank;
+            if (onRank) {
+                renderRankings();
+                history.replaceState(null, '', '#rankings');
+                document.title = 'BenFactor rankings \u2014 City Climate Comparison';
+            } else {
+                render();
+                charts.forEach(drawChart);
+            }
+        }
+
+        tabCompare.addEventListener('click', () => setView('compare'));
+        tabRank.addEventListener('click', () => setView('rank'));
+
         // ---- state --------------------------------------------------------
         const comboA = createCombo('cityA', 'listA', render);
         const comboB = createCombo('cityB', 'listB', render);
@@ -1081,12 +1355,16 @@
             renderCharts(a, b);
             renderProvenance(a, b);
             unitBtn.innerHTML = metric ? 'Switch to °F / inches' : 'Switch to °C / mm';
-            history.replaceState(null, '', '#' + slug(a) + '/' + slug(b));
-            document.title = disp(a) + ' vs ' + disp(b) + ' — City Climate Comparison';
+            if (view === 'compare') {
+                history.replaceState(null, '', '#' + slug(a) + '/' + slug(b));
+                document.title = disp(a) + ' vs ' + disp(b) + ' — City Climate Comparison';
+            }
         }
 
         function applyHash() {
-            const parts = decodeURIComponent(location.hash.replace(/^#/, '')).split('/');
+            const raw = decodeURIComponent(location.hash.replace(/^#/, ''));
+            if (raw === 'rankings') { setView('rank'); return false; }
+            const parts = raw.split('/');
             if (parts.length === 2) {
                 const ia = indexOfSlug(parts[0]), ib = indexOfSlug(parts[1]);
                 if (ia >= 0 && ib >= 0) {
@@ -1118,6 +1396,7 @@
             metric = !metric;
             try { localStorage.setItem('climate-units', metric ? 'metric' : 'imperial'); } catch (e) { /* ignore */ }
             render();
+            if (view === 'rank') renderRankings();
         });
 
         const shareBtn = document.getElementById('shareBtn');
@@ -1134,7 +1413,12 @@
             }
         });
 
-        window.addEventListener('hashchange', () => { if (applyHash()) render(); });
+        window.addEventListener('hashchange', () => {
+            const wasRank = view === 'rank';
+            if (applyHash()) {
+                if (wasRank) setView('compare'); else render();
+            }
+        });
 
         let resizeTimer = null;
         window.addEventListener('resize', () => {
