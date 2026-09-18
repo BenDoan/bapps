@@ -12,6 +12,7 @@ This is the `bapps` repository - a collection of simple browser-based utility ap
 - `stopwatch.html` - Simple stopwatch timer
 - `timer.html` - Countdown timer with customizable duration
 - `gauntlet-tracker.html` - Performance metrics tracker with charts
+- `weather-compare.html` - Head-to-head climate comparison for two US cities (NOAA 1991-2020 normals baked into the page)
 
 ## Development Conventions
 
