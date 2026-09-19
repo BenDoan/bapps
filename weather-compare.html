@@ -459,16 +459,18 @@
             <div class="explainer">
                 <h2>What BenFactor measures</h2>
                 <p>One number for how pleasant a city's afternoons are. Every month is scored on how far its
-                average daily high sits from a perfect 72&deg;F, and the twelve monthly scores are averaged.
+                average daily high sits from a perfect 65&deg;F, and the twelve monthly scores are averaged.
                 100 is flawless; 0 is as rough as it gets.</p>
                 <ul>
-                    <li>Base penalty: <code>(daily high &minus; 72&deg;F)&sup2; &divide; 16</code></li>
+                    <li>Base penalty: <code>(daily high &minus; 65&deg;F)&sup2; &divide; 16</code></li>
                     <li>Above 85&deg;F: an extra <code>(daily high &minus; 85)&sup2; &divide; 8</code></li>
                     <li>Below 45&deg;F: an extra <code>(45 &minus; daily high)&sup2; &divide; 8</code></li>
                 </ul>
-                <p>The penalties are squared, so the further a month strays the harder it is hit: a 78&deg;F month
-                scores 98, 85&deg;F scores 89, 95&deg;F scores 54 and anything at or past 105&deg;F bottoms out at 0.
-                Only daily highs count, so overnight lows never drag a city down, and the score is unitless and
+                <p>The penalties are squared, so the further a month strays the harder it is hit: a 72&deg;F month
+                scores 97, 78&deg;F scores 89, 85&deg;F and 45&deg;F both score 75, 95&deg;F and 35&deg;F both score 31,
+                and anything at or past 100&deg;F or 30&deg;F bottoms out at 0. The two thresholds sit 20&deg;
+                either side of 65&deg;F, so heat and cold are punished on the same curve.</p>
+                <p>Only daily highs count, so overnight lows never drag a city down, and the score is unitless and
                 identical in &deg;C mode.</p>
             </div>
 
@@ -559,10 +561,10 @@
             arr.forEach(v => { if (v !== null) { sum += v; seen = true; } });
             return seen ? sum : null;
         }
-        // BenFactor: how close a city's daily high temperatures sit to a perfect 72 degrees F.
-        // Penalties are squared, so drifting twice as far from 72 costs four times as much,
+        // BenFactor: how close a city's daily high temperatures sit to a perfect 65 degrees F.
+        // Penalties are squared, so drifting twice as far from 65 costs four times as much,
         // and heat above 85 or cold below 45 piles a second squared term on top.
-        const IDEAL_F = 72, HOT_F = 85, COLD_F = 45;
+        const IDEAL_F = 65, HOT_F = 85, COLD_F = 45;
         const BASE_DIV = 16, EXTRA_DIV = 8;
 
         function benPenalty(tempF) {
@@ -572,7 +574,7 @@
             return penalty;
         }
         // Scored on the average daily high alone: how close the typical afternoon
-        // gets to 72 is what the metric is after.
+        // gets to the ideal is what the metric is after.
         function benMonth(c, i) {
             if (c.x[i] === null) return null;
             return Math.max(0, 100 - benPenalty(c.x[i]));
@@ -856,7 +858,7 @@
                 const nicer = ba > bb ? a : b;
                 lines.push('BenFactor: ' + nameA(a) + ' ' + ba.toFixed(1) + ', ' + nameB(b) + ' ' +
                     bb.toFixed(1) + ' \u2014 ' + (nicer === a ? nameA(a) : nameB(b)) +
-                    ' has more days topping out near 72\u00B0F' +
+                    ' has more days topping out near 65\u00B0F' +
                     (rankOf(nicer) ? ' (#' + rankOf(nicer) + ' of ' + cities.length + ' cities)' : '') + '.');
             }
 
@@ -1127,7 +1129,7 @@
             const sa = { label: disp(a), color: COLOR_A }, sb = { label: disp(b), color: COLOR_B };
 
             addChart({
-                title: 'BenFactor by month', note: '100 = daily highs right at 72\u00B0F',
+                title: 'BenFactor by month', note: '100 = daily highs right at 65\u00B0F',
                 type: 'line', kind: 'score', wide: true,
                 series: [
                     { label: disp(a), color: COLOR_A, values: benMonths(a) },
