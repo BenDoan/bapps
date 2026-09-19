@@ -556,16 +556,19 @@
                 <p>One number for how pleasant a city is to be outside in. Every month gets three scores
                 &mdash; temperature, humidity and sky &mdash; which are blended <strong>6 : 1 : 1</strong>, and the
                 twelve monthly results are averaged. 100 is flawless; 0 is as rough as it gets.</p>
-                <p><strong>Temperature (weight 6)</strong>, from the month's average daily high:</p>
+                <p><strong>Temperature (weight 6)</strong>, from the month's average daily high. Anything
+                from <strong>60&deg;F to 80&deg;F is ideal and scores a clean 100</strong>; outside that band the
+                penalty is measured from whichever edge was missed:</p>
                 <ul>
-                    <li>Base penalty: <code>(daily high &minus; 65&deg;F)&sup2; &divide; 16</code></li>
+                    <li>Base penalty: <code>(miss from the 60&ndash;80&deg;F band)&sup2; &divide; 16</code></li>
                     <li>Above 85&deg;F: an extra <code>(daily high &minus; 85)&sup2; &divide; 8</code></li>
                     <li>Below 45&deg;F: an extra <code>(45 &minus; daily high)&sup2; &divide; 8</code></li>
                 </ul>
-                <p>The thresholds sit 20&deg; either side of 65&deg;F, so heat and cold ride the same curve:
-                72&deg;F scores 97, 85&deg;F and 45&deg;F both score 75, 95&deg;F and 35&deg;F both score 31, and
-                100&deg;F or 30&deg;F bottoms out at 0. Only daily highs count, so overnight lows never drag a
-                city down.</p>
+                <p>So 85&deg;F scores 98, 90&deg;F scores 91, 95&deg;F scores 73 and 105&deg;F scores 11 on the hot
+                side; 50&deg;F scores 94, 40&deg;F scores 72 and 32&deg;F scores 30 on the cold side. Heat is
+                punished a little harder than cold once a month leaves the band, because the 85&deg;F threshold
+                sits 5&deg; past the top edge while the 45&deg;F one sits 15&deg; below the bottom. Only daily
+                highs count, so overnight lows never drag a city down.</p>
                 <p><strong>Humidity (weight 1)</strong>, from the month's average relative humidity:</p>
                 <ul>
                     <li>Penalty: <code>(relative humidity &minus; 40%)&sup2; &divide; 25</code></li>
@@ -797,13 +800,18 @@
         // BenFactor: a monthly comfort score built from the average daily high, the average
         // relative humidity and the average cloud cover, weighted 6 : 1 : 1. Every penalty is
         // squared, so drifting twice as far from ideal costs four times as much.
-        const IDEAL_F = 65, HOT_F = 85, COLD_F = 45;
+        // Any daily high inside the 60-80 band is ideal and costs nothing; outside it the
+        // penalty is measured from the nearer edge.
+        const IDEAL_LO = 60, IDEAL_HI = 80, HOT_F = 85, COLD_F = 45;
         const BASE_DIV = 16, EXTRA_DIV = 8;
         const IDEAL_RH = 40, RH_DIV = 25;
         const WEIGHTS = { temp: 6, humidity: 1, cloud: 1 };
 
         function tempScore(highF) {
-            let penalty = Math.pow(highF - IDEAL_F, 2) / BASE_DIV;
+            let miss = 0;
+            if (highF > IDEAL_HI) miss = highF - IDEAL_HI;
+            else if (highF < IDEAL_LO) miss = IDEAL_LO - highF;
+            let penalty = Math.pow(miss, 2) / BASE_DIV;
             if (highF > HOT_F) penalty += Math.pow(highF - HOT_F, 2) / EXTRA_DIV;
             if (highF < COLD_F) penalty += Math.pow(COLD_F - highF, 2) / EXTRA_DIV;
             return Math.max(0, 100 - penalty);
@@ -1126,7 +1134,7 @@
                 const nicer = ba > bb ? a : b;
                 lines.push('BenFactor: ' + nameA(a) + ' ' + ba.toFixed(1) + ', ' + nameB(b) + ' ' +
                     bb.toFixed(1) + ' \u2014 ' + (nicer === a ? nameA(a) : nameB(b)) +
-                    ' comes closer to 65\u00B0F, 40% humidity and a clear sky' +
+                    ' spends more of the year near a 60\u201380\u00B0F afternoon, 40% humidity and a clear sky' +
                     (rankOf(nicer) ? ' (#' + rankOf(nicer) + ' of ' + cities.length + ' cities)' : '') + '.');
             }
 
