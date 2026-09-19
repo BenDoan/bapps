@@ -471,37 +471,6 @@
             <p class="subtitle">Head-to-head U.S. climate normals, 1991&ndash;2020 &middot; NOAA NCEI</p>
         </header>
 
-        <section class="map-card">
-            <div class="map-head">
-                <div class="map-title">BenFactor across the country</div>
-                <div class="map-note">Click a station to put it in the comparison</div>
-            </div>
-            <div class="map-wrap" id="mapWrap">
-                <svg id="usMap" viewBox="52 43 844 522" role="img"
-                     aria-label="Map of the United States with each weather station colored by its BenFactor, from 50 or below in deep violet to 100 in bright yellow">
-                    <defs>
-                        <clipPath id="usClip" clipPathUnits="userSpaceOnUse"><path id="usClipPath" d=""></path></clipPath>
-                    </defs>
-                    <path class="us-fill" id="usFill" d=""></path>
-                    <image class="map-field" id="mapField" x="52" y="43" width="844" height="522"
-                           preserveAspectRatio="none" clip-path="url(#usClip)"></image>
-                    <path class="us-line" id="usLine" d=""></path>
-                    <g id="mapDots"></g>
-                </svg>
-                <div class="tooltip" id="mapTip"></div>
-            </div>
-            <div class="map-legend">
-                <span>BenFactor</span>
-                <span class="map-scale">
-                    <i></i>
-                    <span class="map-ticks"><b>&le;50</b><b>60</b><b>70</b><b>80</b><b>90</b><b>100</b></span>
-                </span>
-            </div>
-            <p class="map-note map-foot">Every dot is one weather station. The shading between them is an
-            inverse-distance blend of the nearest stations &mdash; a rough guide to the gaps, not a climate model.
-            Guam and Puerto Rico fall outside the map; they are in the rankings.</p>
-        </section>
-
         <nav class="tabs">
             <button class="tab active" id="tabCompare" type="button">Compare two cities</button>
             <button class="tab" id="tabRank" type="button">BenFactor rankings</button>
@@ -551,6 +520,37 @@
         </div>
 
         <div id="viewRank" hidden>
+            <section class="map-card">
+                <div class="map-head">
+                    <div class="map-title">BenFactor across the country</div>
+                    <div class="map-note">Click a station to put it in the comparison</div>
+                </div>
+                <div class="map-wrap" id="mapWrap">
+                    <svg id="usMap" viewBox="52 43 844 522" role="img"
+                         aria-label="Map of the United States with each weather station colored by its BenFactor, from the harshest in deep violet to the most pleasant in bright yellow">
+                        <defs>
+                            <clipPath id="usClip" clipPathUnits="userSpaceOnUse"><path id="usClipPath" d=""></path></clipPath>
+                        </defs>
+                        <path class="us-fill" id="usFill" d=""></path>
+                        <image class="map-field" id="mapField" x="52" y="43" width="844" height="522"
+                               preserveAspectRatio="none" clip-path="url(#usClip)"></image>
+                        <path class="us-line" id="usLine" d=""></path>
+                        <g id="mapDots"></g>
+                    </svg>
+                    <div class="tooltip" id="mapTip"></div>
+                </div>
+                <div class="map-legend">
+                    <span>BenFactor</span>
+                    <span class="map-scale">
+                        <i></i>
+                        <span class="map-ticks" id="mapTicks"></span>
+                    </span>
+                </div>
+                <p class="map-note map-foot">Every dot is one weather station. The shading between them is an
+                inverse-distance blend of the nearest stations &mdash; a rough guide to the gaps, not a climate model.
+                Guam and Puerto Rico fall outside the map, so they only appear in the list below.</p>
+            </section>
+
             <div class="explainer">
                 <h2>What BenFactor measures</h2>
                 <p>One number for how pleasant a city is to be outside in. Every month gets three scores
@@ -1547,10 +1547,13 @@
             return 'l48';
         }
 
-        // Viridis, stretched over 50 (harsh) to 100 (perfect). Anything below 50 pins
-        // to the dark end: only a handful of cities get there, and they are all extremes.
+        // Viridis, stretched over the range the scores actually cover so the ramp keeps
+        // its full span if the formula changes. The worst 5% of cities, all of them
+        // extremes, pin to the dark end.
         const BEN_STOPS = [[70, 50, 126], [54, 92, 141], [39, 127, 142], [74, 193, 109], [160, 218, 57], [253, 231, 37]];
-        const BEN_LOW = 50, BEN_HIGH = 100;
+        const BEN_SCORES = RANKED.map(r => r.score); // already sorted, best first
+        const BEN_LOW = Math.floor(BEN_SCORES[Math.floor(BEN_SCORES.length * 0.95)] / 5) * 5;
+        const BEN_HIGH = Math.max(BEN_LOW + 5, Math.ceil(BEN_SCORES[0] / 5) * 5);
 
         function benColor(score) {
             let t = (score - BEN_LOW) / (BEN_HIGH - BEN_LOW);
@@ -1623,6 +1626,9 @@
         }
 
         // Dots are drawn in map units, so they need re-sizing to stay the same on screen.
+        // A hidden map measures zero wide, so the dots keep whatever size they had.
+        const DOT_R = 5.3;
+
         function sizeMapDots() {
             const width = mapSvg.getBoundingClientRect().width;
             if (!width) return;
@@ -1644,7 +1650,18 @@
             picked.forEach(dot => mapDots.appendChild(dot)); // keep the pair on top
         }
 
+        function paintMapLegend() {
+            const step = (BEN_HIGH - BEN_LOW) / 5;
+            let html = '';
+            for (let i = 0; i <= 5; i++) {
+                const value = Math.round(BEN_LOW + step * i);
+                html += '<b>' + (i ? value : '\u2264' + value) + '</b>';
+            }
+            document.getElementById('mapTicks').innerHTML = html;
+        }
+
         function buildMap() {
+            paintMapLegend();
             document.getElementById('usClipPath').setAttribute('d', US_LAND);
             document.getElementById('usFill').setAttribute('d', US_LAND);
             document.getElementById('usLine').setAttribute('d', US_LAND);
@@ -1654,6 +1671,7 @@
                 dot.setAttribute('cx', p.x.toFixed(1));
                 dot.setAttribute('cy', p.y.toFixed(1));
                 dot.setAttribute('fill', benColorCss(p.score));
+                dot.setAttribute('r', DOT_R);
                 dot.dataset.i = p.i;
                 mapDots.appendChild(dot);
             });
@@ -1700,6 +1718,7 @@
             document.getElementById('randomBtn').hidden = onRank;
             if (onRank) {
                 renderRankings();
+                sizeMapDots();
                 history.replaceState(null, '', '#rankings');
                 document.title = 'BenFactor rankings \u2014 City Climate Comparison';
             } else {
