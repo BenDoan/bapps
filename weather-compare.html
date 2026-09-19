@@ -557,18 +557,18 @@
                 &mdash; temperature, humidity and sky &mdash; which are blended <strong>6 : 1 : 1</strong>, and the
                 twelve monthly results are averaged. 100 is flawless; 0 is as rough as it gets.</p>
                 <p><strong>Temperature (weight 6)</strong>, from the month's average daily high. Anything
-                from <strong>60&deg;F to 80&deg;F is ideal and scores a clean 100</strong>; outside that band the
+                from <strong>55&deg;F to 80&deg;F is ideal and scores a clean 100</strong>; outside that band the
                 penalty is measured from whichever edge was missed:</p>
                 <ul>
-                    <li>Base penalty: <code>(miss from the 60&ndash;80&deg;F band)&sup2; &divide; 16</code></li>
+                    <li>Base penalty: <code>(miss from the 55&ndash;80&deg;F band)&sup2; &divide; 16</code></li>
                     <li>Above 85&deg;F: an extra <code>(daily high &minus; 85)&sup2; &divide; 8</code></li>
                     <li>Below 45&deg;F: an extra <code>(45 &minus; daily high)&sup2; &divide; 8</code></li>
                 </ul>
                 <p>So 85&deg;F scores 98, 90&deg;F scores 91, 95&deg;F scores 73 and 105&deg;F scores 11 on the hot
-                side; 50&deg;F scores 94, 40&deg;F scores 72 and 32&deg;F scores 30 on the cold side. Heat is
-                punished a little harder than cold once a month leaves the band, because the 85&deg;F threshold
-                sits 5&deg; past the top edge while the 45&deg;F one sits 15&deg; below the bottom. Only daily
-                highs count, so overnight lows never drag a city down.</p>
+                side; 50&deg;F scores 98, 45&deg;F scores 94, 40&deg;F scores 83 and 32&deg;F scores 46 on the cold
+                side. Heat is punished a little harder than cold once a month leaves the band, because the
+                85&deg;F threshold sits 5&deg; past the top edge while the 45&deg;F one sits 10&deg; below the
+                bottom. Only daily highs count, so overnight lows never drag a city down.</p>
                 <p><strong>Humidity (weight 1)</strong>, from the month's average relative humidity:</p>
                 <ul>
                     <li>Penalty: <code>(relative humidity &minus; 40%)&sup2; &divide; 25</code></li>
@@ -800,9 +800,9 @@
         // BenFactor: a monthly comfort score built from the average daily high, the average
         // relative humidity and the average cloud cover, weighted 6 : 1 : 1. Every penalty is
         // squared, so drifting twice as far from ideal costs four times as much.
-        // Any daily high inside the 60-80 band is ideal and costs nothing; outside it the
+        // Any daily high inside the 55-80 band is ideal and costs nothing; outside it the
         // penalty is measured from the nearer edge.
-        const IDEAL_LO = 60, IDEAL_HI = 80, HOT_F = 85, COLD_F = 45;
+        const IDEAL_LO = 55, IDEAL_HI = 80, HOT_F = 85, COLD_F = 45;
         const BASE_DIV = 16, EXTRA_DIV = 8;
         const IDEAL_RH = 40, RH_DIV = 25;
         const WEIGHTS = { temp: 6, humidity: 1, cloud: 1 };
@@ -1134,7 +1134,7 @@
                 const nicer = ba > bb ? a : b;
                 lines.push('BenFactor: ' + nameA(a) + ' ' + ba.toFixed(1) + ', ' + nameB(b) + ' ' +
                     bb.toFixed(1) + ' \u2014 ' + (nicer === a ? nameA(a) : nameB(b)) +
-                    ' spends more of the year near a 60\u201380\u00B0F afternoon, 40% humidity and a clear sky' +
+                    ' spends more of the year near a 55\u201380\u00B0F afternoon, 40% humidity and a clear sky' +
                     (rankOf(nicer) ? ' (#' + rankOf(nicer) + ' of ' + cities.length + ' cities)' : '') + '.');
             }
 
