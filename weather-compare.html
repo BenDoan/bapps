@@ -540,7 +540,7 @@
                     <div class="tooltip" id="mapTip"></div>
                 </div>
                 <div class="map-legend">
-                    <span>BenFactor</span>
+                    <span id="mapMetricName">BenFactor</span>
                     <span class="map-scale">
                         <i></i>
                         <span class="map-ticks" id="mapTicks"></span>
@@ -585,9 +585,44 @@
                 inputs.</p>
             </div>
 
+            <div class="explainer">
+                <h2>ClaudeFactor: the steady-comfort take</h2>
+                <p>A second opinion on the same data, and the one the <em>Rank by</em> button switches to.
+                BenFactor asks how good a city's weather gets; ClaudeFactor asks how reliably comfortable it is.
+                Two ideas drive it.</p>
+                <p><strong>1. Score the whole day, not just the afternoon.</strong> Every month gets a comfort
+                score out of 100, blended <strong>5 : 1.5 : 2 : 1.5</strong>:</p>
+                <ul>
+                    <li>Daytime: the average high against a <strong>63&ndash;78&deg;F</strong> band,
+                        <code>miss&sup2; &divide; 8</code> outside it</li>
+                    <li>Overnight: the average low against a <strong>45&ndash;68&deg;F</strong> band,
+                        <code>miss&sup2; &divide; 10</code> outside it</li>
+                    <li>Air: mugginess by dew point, <code>(dew point &minus; 58&deg;F)&sup2; &divide; 6</code> once
+                        it climbs past 58&deg;F, plus a small bite below 25% humidity. Dew point is the honest
+                        mugginess yardstick &mdash; 70% humidity at 50&deg;F is crisp, at 85&deg;F it is soup &mdash;
+                        and dry air is treated as merely fine, not punished the way damp air is</li>
+                    <li>Sky: <code>100 &minus; cloud cover %</code></li>
+                </ul>
+                <p><strong>2. Charge for the travel.</strong> A city that is glorious in May and brutal in January
+                is not consistently comfortable, so the year's average comfort is docked twice:</p>
+                <ul>
+                    <li>Seasonal: <code>(warmest month's high &minus; coldest month's high)&sup2; &divide; 90</code></li>
+                    <li>Daily: <code>(average day&ndash;night swing &minus; 18&deg;F)&sup2; &divide; 25</code>, only
+                        once the swing passes 18&deg;F</li>
+                </ul>
+                <p>Those penalties are measured on the thermometer itself rather than on the comfort score, which
+                matters: a city that is 10&deg; too cold in January and 10&deg; too hot in July looks steady if you
+                only watch the score, and anything but steady if you live there. San Diego gives up 1 point to the
+                seasonal term; Chicago gives up 31; Fairbanks gives up 58.</p>
+                <p>The result rewards maritime climates and punishes continental ones, which is the honest
+                consequence of caring about consistency: the high desert that tops BenFactor trades a glorious
+                September for a January that is 40&deg;F colder.</p>
+            </div>
+
             <div class="rank-tools">
                 <input type="text" id="rankFilter" class="combo-input" placeholder="Filter by city, state or station&hellip;"
                        autocomplete="off" spellcheck="false" aria-label="Filter rankings">
+                <button class="btn" id="metricBtn" type="button">Rank by ClaudeFactor</button>
                 <button class="btn" id="rankOrderBtn" type="button">Worst first</button>
             </div>
 
@@ -862,6 +897,69 @@
             return vals.reduce((a, b) => a + b, 0) / 12;
         }
 
+        // ---- ClaudeFactor: steady comfort ---------------------------------
+        // A second opinion on the same data. BenFactor asks how good a city's weather
+        // gets; this asks how reliably comfortable it is. Each month is scored on the
+        // whole day, not just the afternoon, and then the score is docked for how far
+        // the thermometer travels over the year and over an average day.
+        const DAY_LO = 63, DAY_HI = 78, DAY_DIV = 8;
+        const NIGHT_LO = 45, NIGHT_HI = 68, NIGHT_DIV = 10;
+        const MUGGY_F = 58, MUGGY_DIV = 6, ARID_RH = 25, ARID_DIV = 25;
+        const SWING_DIV = 90, DIURNAL_FREE = 18, DIURNAL_DIV = 25;
+        const COMFORT_WEIGHTS = { day: 5, night: 1.5, air: 2, sky: 1.5 };
+
+        function bandScore(value, lo, hi, div) {
+            const miss = value > hi ? value - hi : (value < lo ? lo - value : 0);
+            return Math.max(0, 100 - Math.pow(miss, 2) / div);
+        }
+        // Dew point from the month's mean temperature and relative humidity (Magnus),
+        // because muggy is a dew point story, not a humidity-percentage one.
+        function dewPointF(tempF, rh) {
+            const tC = (tempF - 32) / 1.8;
+            const g = Math.log(Math.max(rh, 1) / 100) + 17.67 * tC / (tC + 243.5);
+            return (243.5 * g / (17.67 - g)) * 1.8 + 32;
+        }
+        function comfortMonth(c, i) {
+            if (c.x[i] === null || c.m[i] === null || !c.rh || !c.cl) return null;
+            if (c.rh[i] === null || c.cl[i] === null) return null;
+            const day = bandScore(c.x[i], DAY_LO, DAY_HI, DAY_DIV);
+            const night = bandScore(c.m[i], NIGHT_LO, NIGHT_HI, NIGHT_DIV);
+            const air = Math.max(0, 100
+                - Math.pow(Math.max(0, dewPointF(c.t[i], c.rh[i]) - MUGGY_F), 2) / MUGGY_DIV
+                - Math.pow(Math.max(0, ARID_RH - c.rh[i]), 2) / ARID_DIV);
+            const sky = Math.max(0, 100 - c.cl[i]);
+            const w = COMFORT_WEIGHTS;
+            return (w.day * day + w.night * night + w.air * air + w.sky * sky) /
+                (w.day + w.night + w.air + w.sky);
+        }
+        function comfortMonths(c) {
+            const out = [];
+            for (let i = 0; i < 12; i++) out.push(comfortMonth(c, i));
+            return out;
+        }
+        function comfortMean(c) {
+            const months = comfortMonths(c);
+            if (months.some(v => v === null)) return null;
+            return months.reduce((a, b) => a + b, 0) / 12;
+        }
+        function seasonalSwing(c) {
+            return Math.max.apply(null, c.x) - Math.min.apply(null, c.x);
+        }
+        function diurnalSwing(c) {
+            let sum = 0;
+            for (let i = 0; i < 12; i++) sum += c.x[i] - c.m[i];
+            return sum / 12;
+        }
+        function swingPenalty(c) { return Math.pow(seasonalSwing(c), 2) / SWING_DIV; }
+        function diurnalPenalty(c) {
+            return Math.pow(Math.max(0, diurnalSwing(c) - DIURNAL_FREE), 2) / DIURNAL_DIV;
+        }
+        function claudeFactor(c) {
+            const mean = comfortMean(c);
+            if (mean === null) return null;
+            return Math.max(0, mean - swingPenalty(c) - diurnalPenalty(c));
+        }
+
         function plural(value, one, many) {
             if (value === null || value === undefined) return '\u2014';
             const n = Math.round(value);
@@ -880,6 +978,12 @@
             { label: '\u2014 temperature part (weight 6)', kind: 'score', get: c => benComponent(c, 'temp') },
             { label: '\u2014 humidity part (weight 1)', kind: 'score', get: c => benComponent(c, 'humidity') },
             { label: '\u2014 cloud part (weight 1)', kind: 'score', get: c => benComponent(c, 'cloud') },
+            { label: 'ClaudeFactor (steady comfort)', kind: 'score', get: c => claudeFactor(c) },
+            { label: '\u2014 average monthly comfort', kind: 'score', get: c => comfortMean(c) },
+            { label: '\u2014 seasonal swing penalty', kind: 'score', get: c => -swingPenalty(c) },
+            { label: '\u2014 day\u2013night swing penalty', kind: 'score', get: c => -diurnalPenalty(c) },
+            { label: 'Seasonal swing (warmest \u2212 coldest month)', kind: 'tempDelta', get: c => seasonalSwing(c) },
+            { label: 'Average day\u2013night swing', kind: 'tempDelta', get: c => diurnalSwing(c) },
             { label: 'Average annual temperature', kind: 'temp', get: c => c.a.tavg },
             { label: 'Average January temperature', kind: 'temp', get: c => c.t[0] },
             { label: 'Average August temperature', kind: 'temp', get: c => c.t[7] },
@@ -1063,9 +1167,10 @@
             const elev = metric ? Math.round(c.el / 3.28084).toLocaleString() + ' m'
                 : Math.round(c.el).toLocaleString() + ' ft';
             const rank = rankOf(c);
-            const benLine = rank
-                ? '<br>BenFactor ' + benFactor(c).toFixed(1) + ' &middot; #' + rank + ' of ' + cities.length
-                : '';
+            const steady = claudeFactor(c);
+            const benLine = '<br>BenFactor ' + benFactor(c).toFixed(1) +
+                (steady === null ? '' : ' &middot; ClaudeFactor ' + steady.toFixed(1)) +
+                (rank ? ' &middot; #' + rank + ' of ' + cities.length + ' by ' + activeMetric().label : '');
             return '<div class="city-name">' + c.n + ', ' + c.s + '</div>' +
                 '<div class="city-meta">' + c.st + ', ' + c.sst + ' &middot; ' + c.id + '<br>' +
                 elev + ' elevation &middot; ' + c.la.toFixed(2) + '°, ' + c.lo.toFixed(2) + '° &middot; ' +
@@ -1136,6 +1241,16 @@
                     bb.toFixed(1) + ' \u2014 ' + (nicer === a ? nameA(a) : nameB(b)) +
                     ' spends more of the year near a 55\u201375\u00B0F afternoon, 40% humidity and a clear sky' +
                     (rankOf(nicer) ? ' (#' + rankOf(nicer) + ' of ' + cities.length + ' cities)' : '') + '.');
+            }
+
+            const ca = claudeFactor(a), cb = claudeFactor(b);
+            if (ca !== null && cb !== null) {
+                const steadier = ca > cb ? a : b;
+                lines.push('ClaudeFactor: ' + nameA(a) + ' ' + ca.toFixed(1) + ', ' + nameB(b) + ' ' +
+                    cb.toFixed(1) + ' \u2014 ' + (steadier === a ? nameA(a) : nameB(b)) +
+                    ' keeps its comfort steadier, with ' + fmt('tempDelta', seasonalSwing(steadier)) +
+                    ' between its warmest and coldest month against ' +
+                    fmt('tempDelta', seasonalSwing(steadier === a ? b : a)) + '.');
             }
 
             const dJan = a.t[0] - b.t[0], dAug = a.t[7] - b.t[7];
@@ -1414,6 +1529,15 @@
             });
 
             addChart({
+                title: 'Comfort by month (ClaudeFactor)', note: 'before the swing penalties are taken off',
+                type: 'line', kind: 'score', wide: true,
+                series: [
+                    { label: disp(a), color: COLOR_A, values: comfortMonths(a) },
+                    { label: disp(b), color: COLOR_B, values: comfortMonths(b) }
+                ]
+            });
+
+            addChart({
                 title: 'Average temperature', note: 'monthly mean of daily highs and lows',
                 type: 'line', kind: 'temp', wide: true, zeroBase: false,
                 series: [
@@ -1530,12 +1654,26 @@
         }
 
         // ---- BenFactor rankings -------------------------------------------
-        const RANKED = cities
-            .map((c, i) => ({ i: i, score: benFactor(c) }))
-            .filter(r => r.score !== null)
-            .sort((x, y) => y.score - x.score);
-        const RANK_OF = {};
-        RANKED.forEach((r, n) => { RANK_OF[r.i] = n + 1; });
+        const METRICS = {
+            ben: { label: 'BenFactor', fn: benFactor },
+            steady: { label: 'ClaudeFactor', fn: claudeFactor }
+        };
+        let metricKey = 'ben';
+        function activeMetric() { return METRICS[metricKey]; }
+        function scoreOf(c) { return activeMetric().fn(c); }
+
+        let RANKED = [];
+        let RANK_OF = {};
+
+        function buildRanking() {
+            RANKED = cities
+                .map((c, i) => ({ i: i, score: scoreOf(c) }))
+                .filter(r => r.score !== null)
+                .sort((x, y) => y.score - x.score);
+            RANK_OF = {};
+            RANKED.forEach((r, n) => { RANK_OF[r.i] = n + 1; });
+        }
+        buildRanking();
 
         function rankOf(city) { return RANK_OF[cities.indexOf(city)] || null; }
 
@@ -1555,9 +1693,10 @@
             }
             if (worstFirst) shown = shown.slice().reverse();
 
-            rankCount.textContent = query
+            rankCount.textContent = (query
                 ? shown.length + ' of ' + RANKED.length + ' cities'
-                : RANKED.length + ' cities, ' + (worstFirst ? 'worst' : 'best') + ' first';
+                : RANKED.length + ' cities') + ', by ' + activeMetric().label + ', ' +
+                (worstFirst ? 'worst' : 'best') + ' first';
 
             if (!shown.length) {
                 rankList.innerHTML = '<li class="rank-empty">No city matches that filter</li>';
@@ -1566,12 +1705,15 @@
             const top = RANKED[0].score;
             rankList.innerHTML = shown.map(r => {
                 const c = cities[r.i];
-                const part = kind => {
-                    const v = benComponent(c, kind);
-                    return v === null ? '\u2014' : v.toFixed(0);
-                };
-                const meta = 'temp ' + part('temp') + ' \u00B7 humidity ' + part('humidity') +
-                    ' \u00B7 sky ' + part('cloud') + ' \u00B7 ' + fmt('temp', c.a.tavg) + ' year-round';
+                const num = v => (v === null || v === undefined ? '\u2014' : v.toFixed(0));
+                const meta = metricKey === 'ben'
+                    ? 'temp ' + num(benComponent(c, 'temp')) + ' \u00B7 humidity ' +
+                      num(benComponent(c, 'humidity')) + ' \u00B7 sky ' + num(benComponent(c, 'cloud')) +
+                      ' \u00B7 ClaudeFactor ' + num(claudeFactor(c))
+                    : 'comfort ' + num(comfortMean(c)) + ' \u00B7 swing \u2212' +
+                      num(swingPenalty(c) + diurnalPenalty(c)) + ' \u00B7 ' +
+                      fmt('tempDelta', seasonalSwing(c)) + ' across the year \u00B7 BenFactor ' +
+                      num(benFactor(c));
                 const flag = r.i === comboA.index ? ' is-a' : (r.i === comboB.index ? ' is-b' : '');
                 return '<li class="rank-row' + flag + '" data-i="' + r.i + '" tabindex="0" ' +
                     'title="Compare ' + escapeHtml(labelFor(c)) + '">' +
@@ -1591,6 +1733,16 @@
         }
 
         rankFilter.addEventListener('input', renderRankings);
+        document.getElementById('metricBtn').addEventListener('click', () => {
+            metricKey = metricKey === 'ben' ? 'steady' : 'ben';
+            document.getElementById('metricBtn').textContent =
+                'Rank by ' + METRICS[metricKey === 'ben' ? 'steady' : 'ben'].label;
+            buildRanking();
+            repaintMapScores();
+            renderRankings();
+            render();
+        });
+
         rankOrderBtn.addEventListener('click', () => {
             worstFirst = !worstFirst;
             rankOrderBtn.textContent = worstFirst ? 'Best first' : 'Worst first';
@@ -1681,9 +1833,14 @@
         // its full span if the formula changes. The worst 5% of cities, all of them
         // extremes, pin to the dark end.
         const BEN_STOPS = [[70, 50, 126], [54, 92, 141], [39, 127, 142], [74, 193, 109], [160, 218, 57], [253, 231, 37]];
-        const BEN_SCORES = RANKED.map(r => r.score); // already sorted, best first
-        const BEN_LOW = Math.floor(BEN_SCORES[Math.floor(BEN_SCORES.length * 0.95)] / 5) * 5;
-        const BEN_HIGH = Math.max(BEN_LOW + 5, Math.ceil(BEN_SCORES[0] / 5) * 5);
+        let BEN_LOW = 0, BEN_HIGH = 100;
+
+        function recomputeScale() {
+            const scores = RANKED.map(r => r.score); // already sorted, best first
+            BEN_LOW = Math.floor(scores[Math.floor(scores.length * 0.95)] / 5) * 5;
+            BEN_HIGH = Math.max(BEN_LOW + 5, Math.ceil(scores[0] / 5) * 5);
+        }
+        recomputeScale();
 
         function benColor(score) {
             let t = (score - BEN_LOW) / (BEN_HIGH - BEN_LOW);
@@ -1703,7 +1860,7 @@
 
         const MAP_POINTS = [];
         cities.forEach((c, i) => {
-            const score = benFactor(c);
+            const score = scoreOf(c);
             if (score === null) return;
             const p = projectStation(c.lo, c.la);
             if (p) MAP_POINTS.push({ i: i, x: p.x, y: p.y, area: p.area, score: score });
@@ -1781,6 +1938,7 @@
         }
 
         function paintMapLegend() {
+            document.getElementById('mapMetricName').textContent = activeMetric().label;
             const step = (BEN_HIGH - BEN_LOW) / 5;
             let html = '';
             for (let i = 0; i <= 5; i++) {
@@ -1788,6 +1946,24 @@
                 html += '<b>' + (i ? value : '\u2264' + value) + '</b>';
             }
             document.getElementById('mapTicks').innerHTML = html;
+        }
+
+        function repaintMapScores() {
+            const byCity = {};
+            MAP_POINTS.forEach(p => {
+                p.score = scoreOf(cities[p.i]);
+                byCity[p.i] = p.score;
+            });
+            recomputeScale();
+            paintMapLegend();
+            // Selected dots get moved to the end of the group to stay on top, so match
+            // each dot to its city rather than to its position.
+            for (let i = 0; i < mapDots.children.length; i++) {
+                const dot = mapDots.children[i];
+                const score = byCity[+dot.dataset.i];
+                if (score !== undefined) dot.setAttribute('fill', benColorCss(score));
+            }
+            renderMapField();
         }
 
         function buildMap() {
@@ -1816,7 +1992,7 @@
             if (!dot) { mapTip.classList.remove('show'); return; }
             const i = +dot.dataset.i, c = cities[i];
             mapTip.innerHTML = '<div class="t-month">#' + RANK_OF[i] + ' of ' + RANKED.length + '</div>' +
-                escapeHtml(labelFor(c)) + '<br>BenFactor ' + benFactor(c).toFixed(1);
+                escapeHtml(labelFor(c)) + '<br>' + activeMetric().label + ' ' + scoreOf(c).toFixed(1);
             mapTip.classList.add('show');
             const box = mapWrap.getBoundingClientRect();
             const x = e.clientX - box.left, y = e.clientY - box.top;
