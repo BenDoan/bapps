@@ -462,11 +462,13 @@
                 average daily high sits from a perfect 72&deg;F, and the twelve monthly scores are averaged.
                 100 is flawless; 0 is as rough as it gets.</p>
                 <ul>
-                    <li>Base penalty: <code>|daily high &minus; 72&deg;F|</code></li>
-                    <li>Above 85&deg;F: an extra <code>2 &times; (daily high &minus; 85)</code></li>
-                    <li>Below 45&deg;F: an extra <code>2 &times; (45 &minus; daily high)</code></li>
+                    <li>Base penalty: <code>(daily high &minus; 72&deg;F)&sup2; &divide; 16</code></li>
+                    <li>Above 85&deg;F: an extra <code>(daily high &minus; 85)&sup2; &divide; 8</code></li>
+                    <li>Below 45&deg;F: an extra <code>(45 &minus; daily high)&sup2; &divide; 8</code></li>
                 </ul>
-                <p>Only daily highs count, so overnight lows never drag a city down. The score is unitless and
+                <p>The penalties are squared, so the further a month strays the harder it is hit: a 78&deg;F month
+                scores 98, 85&deg;F scores 89, 95&deg;F scores 54 and anything at or past 105&deg;F bottoms out at 0.
+                Only daily highs count, so overnight lows never drag a city down, and the score is unitless and
                 identical in &deg;C mode.</p>
             </div>
 
@@ -558,13 +560,15 @@
             return seen ? sum : null;
         }
         // BenFactor: how close a city's daily high temperatures sit to a perfect 72 degrees F.
-        // Heat above 85 and cold below 45 carry an extra penalty on top of the distance.
-        const IDEAL_F = 72, HOT_F = 85, COLD_F = 45, EXTRA = 2;
+        // Penalties are squared, so drifting twice as far from 72 costs four times as much,
+        // and heat above 85 or cold below 45 piles a second squared term on top.
+        const IDEAL_F = 72, HOT_F = 85, COLD_F = 45;
+        const BASE_DIV = 16, EXTRA_DIV = 8;
 
         function benPenalty(tempF) {
-            let penalty = Math.abs(tempF - IDEAL_F);
-            if (tempF > HOT_F) penalty += EXTRA * (tempF - HOT_F);
-            if (tempF < COLD_F) penalty += EXTRA * (COLD_F - tempF);
+            let penalty = Math.pow(tempF - IDEAL_F, 2) / BASE_DIV;
+            if (tempF > HOT_F) penalty += Math.pow(tempF - HOT_F, 2) / EXTRA_DIV;
+            if (tempF < COLD_F) penalty += Math.pow(COLD_F - tempF, 2) / EXTRA_DIV;
             return penalty;
         }
         // Scored on the average daily high alone: how close the typical afternoon
