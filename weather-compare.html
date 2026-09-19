@@ -458,16 +458,16 @@
         <div id="viewRank" hidden>
             <div class="explainer">
                 <h2>What BenFactor measures</h2>
-                <p>One number for how pleasant a city's temperatures are. Every month is scored on how far its
-                average high and average low sit from a perfect 72&deg;F, and the twelve monthly scores are averaged.
+                <p>One number for how pleasant a city's afternoons are. Every month is scored on how far its
+                average daily high sits from a perfect 72&deg;F, and the twelve monthly scores are averaged.
                 100 is flawless; 0 is as rough as it gets.</p>
                 <ul>
-                    <li>Base penalty: <code>|temperature &minus; 72&deg;F|</code></li>
-                    <li>Above 85&deg;F: an extra <code>2 &times; (temperature &minus; 85)</code></li>
-                    <li>Below 45&deg;F: an extra <code>2 &times; (45 &minus; temperature)</code></li>
+                    <li>Base penalty: <code>|daily high &minus; 72&deg;F|</code></li>
+                    <li>Above 85&deg;F: an extra <code>2 &times; (daily high &minus; 85)</code></li>
+                    <li>Below 45&deg;F: an extra <code>2 &times; (45 &minus; daily high)</code></li>
                 </ul>
-                <p>Highs and lows are both scored, so a city is rewarded for mild afternoons <em>and</em> mild nights.
-                The score is unitless and identical in &deg;C mode.</p>
+                <p>Only daily highs count, so overnight lows never drag a city down. The score is unitless and
+                identical in &deg;C mode.</p>
             </div>
 
             <div class="rank-tools">
@@ -557,7 +557,7 @@
             arr.forEach(v => { if (v !== null) { sum += v; seen = true; } });
             return seen ? sum : null;
         }
-        // BenFactor: how close a city's temperatures sit to a perfect 72 degrees F.
+        // BenFactor: how close a city's daily high temperatures sit to a perfect 72 degrees F.
         // Heat above 85 and cold below 45 carry an extra penalty on top of the distance.
         const IDEAL_F = 72, HOT_F = 85, COLD_F = 45, EXTRA = 2;
 
@@ -567,12 +567,11 @@
             if (tempF < COLD_F) penalty += EXTRA * (COLD_F - tempF);
             return penalty;
         }
-        // Both the average high and the average low are scored, so mild days and
-        // mild nights each count for half the month.
+        // Scored on the average daily high alone: how close the typical afternoon
+        // gets to 72 is what the metric is after.
         function benMonth(c, i) {
-            if (c.x[i] === null || c.m[i] === null) return null;
-            const penalty = (benPenalty(c.x[i]) + benPenalty(c.m[i])) / 2;
-            return Math.max(0, 100 - penalty);
+            if (c.x[i] === null) return null;
+            return Math.max(0, 100 - benPenalty(c.x[i]));
         }
         function benMonths(c) {
             const out = [];
@@ -853,7 +852,7 @@
                 const nicer = ba > bb ? a : b;
                 lines.push('BenFactor: ' + nameA(a) + ' ' + ba.toFixed(1) + ', ' + nameB(b) + ' ' +
                     bb.toFixed(1) + ' \u2014 ' + (nicer === a ? nameA(a) : nameB(b)) +
-                    ' spends more of the year near 72\u00B0F' +
+                    ' has more days topping out near 72\u00B0F' +
                     (rankOf(nicer) ? ' (#' + rankOf(nicer) + ' of ' + cities.length + ' cities)' : '') + '.');
             }
 
@@ -1124,7 +1123,7 @@
             const sa = { label: disp(a), color: COLOR_A }, sb = { label: disp(b), color: COLOR_B };
 
             addChart({
-                title: 'BenFactor by month', note: '100 = every hour near 72\u00B0F',
+                title: 'BenFactor by month', note: '100 = daily highs right at 72\u00B0F',
                 type: 'line', kind: 'score', wide: true,
                 series: [
                     { label: disp(a), color: COLOR_A, values: benMonths(a) },
