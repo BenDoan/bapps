@@ -554,7 +554,7 @@
             <div class="explainer">
                 <h2>What BenFactor measures</h2>
                 <p>One number for how pleasant a city is to be outside in. Every month gets three scores
-                &mdash; temperature, humidity and sky &mdash; which are blended <strong>6 : 3 : 1</strong>, and the
+                &mdash; temperature, humidity and sky &mdash; which are blended <strong>6 : 1 : 1</strong>, and the
                 twelve monthly results are averaged. 100 is flawless; 0 is as rough as it gets.</p>
                 <p><strong>Temperature (weight 6)</strong>, from the month's average daily high:</p>
                 <ul>
@@ -566,7 +566,7 @@
                 72&deg;F scores 97, 85&deg;F and 45&deg;F both score 75, 95&deg;F and 35&deg;F both score 31, and
                 100&deg;F or 30&deg;F bottoms out at 0. Only daily highs count, so overnight lows never drag a
                 city down.</p>
-                <p><strong>Humidity (weight 3)</strong>, from the month's average relative humidity:</p>
+                <p><strong>Humidity (weight 1)</strong>, from the month's average relative humidity:</p>
                 <ul>
                     <li>Penalty: <code>(relative humidity &minus; 40%)&sup2; &divide; 25</code></li>
                 </ul>
@@ -576,7 +576,9 @@
                 <ul>
                     <li>Score: <code>100 &minus; cloud cover %</code></li>
                 </ul>
-                <p>A month with a sky half covered scores 50. Clouds move the needle least, by design.</p>
+                <p>A month with a sky half covered scores 50. Humidity and sky carry equal weight, and
+                between them they are a quarter of the month's score; temperature is the other three
+                quarters.</p>
                 <p>The score is unitless and identical in &deg;C mode, and all 202 cities carry all three
                 inputs.</p>
             </div>
@@ -793,12 +795,12 @@
             return seen ? sum : null;
         }
         // BenFactor: a monthly comfort score built from the average daily high, the average
-        // relative humidity and the average cloud cover, weighted 6 : 3 : 1. Every penalty is
+        // relative humidity and the average cloud cover, weighted 6 : 1 : 1. Every penalty is
         // squared, so drifting twice as far from ideal costs four times as much.
         const IDEAL_F = 65, HOT_F = 85, COLD_F = 45;
         const BASE_DIV = 16, EXTRA_DIV = 8;
         const IDEAL_RH = 40, RH_DIV = 25;
-        const WEIGHTS = { temp: 6, humidity: 3, cloud: 1 };
+        const WEIGHTS = { temp: 6, humidity: 1, cloud: 1 };
 
         function tempScore(highF) {
             let penalty = Math.pow(highF - IDEAL_F, 2) / BASE_DIV;
@@ -868,7 +870,7 @@
         const ROWS = [
             { label: 'BenFactor (100 = perfect)', kind: 'score', get: c => benFactor(c) },
             { label: '\u2014 temperature part (weight 6)', kind: 'score', get: c => benComponent(c, 'temp') },
-            { label: '\u2014 humidity part (weight 3)', kind: 'score', get: c => benComponent(c, 'humidity') },
+            { label: '\u2014 humidity part (weight 1)', kind: 'score', get: c => benComponent(c, 'humidity') },
             { label: '\u2014 cloud part (weight 1)', kind: 'score', get: c => benComponent(c, 'cloud') },
             { label: 'Average annual temperature', kind: 'temp', get: c => c.a.tavg },
             { label: 'Average January temperature', kind: 'temp', get: c => c.t[0] },
@@ -1395,7 +1397,7 @@
             const sa = { label: disp(a), color: COLOR_A }, sb = { label: disp(b), color: COLOR_B };
 
             addChart({
-                title: 'BenFactor by month', note: 'temperature, humidity and sky, blended 6:3:1',
+                title: 'BenFactor by month', note: 'temperature, humidity and sky, blended 6:1:1',
                 type: 'line', kind: 'score', wide: true,
                 series: [
                     { label: disp(a), color: COLOR_A, values: benMonths(a) },
