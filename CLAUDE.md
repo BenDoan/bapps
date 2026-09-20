@@ -26,6 +26,18 @@ All pages must include the hammer favicon. Add this line in the `<head>` section
 
 The favicon is located at `favicon.svg` in the project root.
 
+### Analytics
+
+All pages must include the Cloudflare Web Analytics snippet. Add these lines immediately before the closing `</body>` tag:
+
+```html
+<!-- Cloudflare Web Analytics -->
+<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0aa3ece974914f348fb1dd50abc624bd"}'></script>
+<!-- End Cloudflare Web Analytics -->
+```
+
+This applies to every new app added to the repo, not just the existing ones.
+
 ### Navigation
 
 All apps must include a back button in the top-left corner that links to the home page (`/`). Use this standard implementation:
