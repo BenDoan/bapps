@@ -44,6 +44,9 @@ test('upload SVG, resize with a locked aspect ratio and download JPEG', async ({
   await page.locator('#scale').selectOption('custom');
   await page.locator('#widthInput').fill('120');
   await expect(page.locator('#heightInput')).toHaveValue('60');
+  // Resizing is debounced. Finish that conversion before changing format so a
+  // pending resize cannot replace/revoke the JPEG download's blob URL.
+  await expect(page.locator('#meta')).toContainText('PNG · 120 × 60 px');
   await page.locator('#format').selectOption('image/jpeg');
   await expect(page.locator('#meta')).toContainText('JPEG · 120 × 60 px');
   await expect(page.locator('#qualityControl')).toBeVisible();
