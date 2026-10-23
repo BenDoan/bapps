@@ -553,8 +553,8 @@
 
             <div class="explainer">
                 <h2>What BenFactor measures</h2>
-                <p>One number for how pleasant a city is to be outside in. Every month gets three scores
-                &mdash; temperature, humidity and sky &mdash; which are blended <strong>6 : 1 : 1</strong>, and the
+                <p>One number for how pleasant a city is to be outside in. Every month gets four scores
+                &mdash; daytime high, overnight low, humidity and sky &mdash; which are blended <strong>6 : 0.5 : 1 : 1</strong>, and the
                 twelve monthly results are averaged. 100 is flawless; 0 is as rough as it gets.</p>
                 <p><strong>Temperature (weight 6)</strong>, from the month's average daily high. Anything
                 from <strong>55&deg;F to 75&deg;F is ideal and scores a clean 100</strong>; outside that band the
@@ -567,7 +567,12 @@
                 <p>The two thresholds sit 10&deg; beyond each edge of the band, so heat and cold ride the same
                 curve: 80&deg;F and 50&deg;F both score 98, 85&deg;F and 45&deg;F both score 94, 90&deg;F and
                 40&deg;F both score 83, 95&deg;F and 35&deg;F both score 63, and 105&deg;F or 25&deg;F bottoms out
-                at 0. Only daily highs count, so overnight lows never drag a city down.</p>
+                at 0. Daily highs carry the most weight; overnight lows have a smaller, separate effect.</p>
+                <p><strong>Overnight low (weight 0.5)</strong>, from the month&apos;s average daily low.
+                45&deg;F to 65&deg;F scores 100. Outside that band, subtract the squared distance
+                from the nearest edge divided by 16. Below 35&deg;F or above 75&deg;F, subtract
+                an additional squared distance beyond that threshold divided by 8. The score
+                bottoms out at 0. Overnight lows contribute about 6% of the total.</p>
                 <p><strong>Humidity (weight 1)</strong>, from the month's average relative humidity:</p>
                 <ul>
                     <li>Penalty: <code>(relative humidity &minus; 40%)&sup2; &divide; 25</code></li>
@@ -579,9 +584,9 @@
                     <li>Score: <code>100 &minus; cloud cover %</code></li>
                 </ul>
                 <p>A month with a sky half covered scores 50. Humidity and sky carry equal weight, and
-                between them they are a quarter of the month's score; temperature is the other three
-                quarters.</p>
-                <p>The score is unitless and identical in &deg;C mode, and all 202 cities carry all three
+                each contributes about 12% of the month's score. Daytime highs contribute about 71%
+                and overnight lows about 6%.</p>
+                <p>The score is unitless and identical in &deg;C mode, and all 202 cities carry all four
                 inputs.</p>
             </div>
 
@@ -796,8 +801,8 @@
             arr.forEach(v => { if (v !== null) { sum += v; seen = true; } });
             return seen ? sum : null;
         }
-        // BenFactor: a monthly comfort score built from the average daily high, the average
-        // relative humidity and the average cloud cover, weighted 6 : 1 : 1. Every penalty is
+        // BenFactor: monthly average daily high, overnight low, relative humidity and
+        // cloud cover, weighted 6 : 0.5 : 1 : 1. Every penalty is
         // squared, so drifting twice as far from ideal costs four times as much.
         // Any daily high inside the 55-75 band is ideal and costs nothing; outside it the
         // penalty is measured from the nearer edge. The 85 and 45 thresholds sit 10 degrees
@@ -805,7 +810,7 @@
         const IDEAL_LO = 55, IDEAL_HI = 75, HOT_F = 85, COLD_F = 45;
         const BASE_DIV = 16, EXTRA_DIV = 8;
         const IDEAL_RH = 40, RH_DIV = 25;
-        const WEIGHTS = { temp: 6, humidity: 1, cloud: 1 };
+        const WEIGHTS = { temp: 6, low: 0.5, humidity: 1, cloud: 1 };
 
         function tempScore(highF) {
             let miss = 0;
@@ -815,6 +820,10 @@
             if (highF > HOT_F) penalty += Math.pow(highF - HOT_F, 2) / EXTRA_DIV;
             if (highF < COLD_F) penalty += Math.pow(COLD_F - highF, 2) / EXTRA_DIV;
             return Math.max(0, 100 - penalty);
+        }
+        function lowScore(lowF) {
+            // Shift the same comfort curve down 10°F for overnight temperatures.
+            return tempScore(lowF + 10);
         }
         function humidityScore(rh) {
             return Math.max(0, 100 - Math.pow(rh - IDEAL_RH, 2) / RH_DIV);
@@ -826,10 +835,11 @@
 
         function monthValue(c, kind, i) {
             if (kind === 'temp') return c.x[i] === null ? null : tempScore(c.x[i]);
+            if (kind === 'low') return c.m && c.m[i] !== null ? lowScore(c.m[i]) : null;
             if (kind === 'humidity') return c.rh && c.rh[i] !== null ? humidityScore(c.rh[i]) : null;
             return c.cl && c.cl[i] !== null ? cloudScore(c.cl[i]) : null;
         }
-        // A city missing one of the three inputs is scored on what it has, with the
+        // A city missing one of the four inputs is scored on what it has, with the
         // remaining weights renormalized.
         function benMonth(c, i) {
             let weighted = 0, weight = 0;
@@ -878,6 +888,7 @@
         const ROWS = [
             { label: 'BenFactor (100 = perfect)', kind: 'score', get: c => benFactor(c) },
             { label: '\u2014 temperature part (weight 6)', kind: 'score', get: c => benComponent(c, 'temp') },
+            { label: '\u2014 overnight low part (weight 0.5)', kind: 'score', get: c => benComponent(c, 'low') },
             { label: '\u2014 humidity part (weight 1)', kind: 'score', get: c => benComponent(c, 'humidity') },
             { label: '\u2014 cloud part (weight 1)', kind: 'score', get: c => benComponent(c, 'cloud') },
             { label: 'Average annual temperature', kind: 'temp', get: c => c.a.tavg },
@@ -1134,7 +1145,7 @@
                 const nicer = ba > bb ? a : b;
                 lines.push('BenFactor: ' + nameA(a) + ' ' + ba.toFixed(1) + ', ' + nameB(b) + ' ' +
                     bb.toFixed(1) + ' \u2014 ' + (nicer === a ? nameA(a) : nameB(b)) +
-                    ' spends more of the year near a 55\u201375\u00B0F afternoon, 40% humidity and a clear sky' +
+                    ' spends more of the year near a 55\u201375\u00B0F afternoon, a 45\u201365\u00B0F overnight low, 40% humidity and a clear sky' +
                     (rankOf(nicer) ? ' (#' + rankOf(nicer) + ' of ' + cities.length + ' cities)' : '') + '.');
             }
 
@@ -1405,7 +1416,7 @@
             const sa = { label: disp(a), color: COLOR_A }, sb = { label: disp(b), color: COLOR_B };
 
             addChart({
-                title: 'BenFactor by month', note: 'temperature, humidity and sky, blended 6:1:1',
+                title: 'BenFactor by month', note: 'daytime high, overnight low, humidity and sky, blended 6:0.5:1:1',
                 type: 'line', kind: 'score', wide: true,
                 series: [
                     { label: disp(a), color: COLOR_A, values: benMonths(a) },
@@ -1570,7 +1581,7 @@
                     const v = benComponent(c, kind);
                     return v === null ? '\u2014' : v.toFixed(0);
                 };
-                const meta = 'temp ' + part('temp') + ' \u00B7 humidity ' + part('humidity') +
+                const meta = 'temp ' + part('temp') + ' \u00B7 overnight ' + part('low') + ' \u00B7 humidity ' + part('humidity') +
                     ' \u00B7 sky ' + part('cloud') + ' \u00B7 ' + fmt('temp', c.a.tavg) + ' year-round';
                 const flag = r.i === comboA.index ? ' is-a' : (r.i === comboB.index ? ' is-b' : '');
                 return '<li class="rank-row' + flag + '" data-i="' + r.i + '" tabindex="0" ' +
