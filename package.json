@@ -1,0 +1,14 @@
+{
+  "name": "bapps",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone browser utilities with happy-path browser tests",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "playwright": "1.57.0"
+  }
+}
